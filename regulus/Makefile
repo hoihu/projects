@@ -69,6 +69,7 @@ SRC_C = \
 	$(wildcard $(USB_DEV_DIR)/*.c) \
 	$(wildcard cdc/*.c) \
 	usb_ll.c \
+	usb_uart.c \
 	main.c
 
 STM_SRC_C = \
@@ -95,13 +96,16 @@ $(BUILD)/firmware.hex: $(BUILD)/firmware.elf
 	$(ECHO) "Create $@"
 	$(Q)$(OBJCOPY) -O ihex $< $@
 
-$(BUILD)/firmware.elf $(BUILD)/firmware.bin: $(OBJ)
+$(BUILD)/firmware.bin: $(BUILD)/firmware.elf
+	$(Q)$(OBJCOPY) -O binary $< $@
+
+$(BUILD)/firmware.elf: $(OBJ)
 	$(ECHO) "LINK $@"
 	$(Q)$(LD) $(LDFLAGS) -o $@ $(OBJ) $(LIBS)
 	$(Q)$(SIZE) $@
 
 download: $(BUILD)/firmware.dfu
-	$(DFU_UTIL) -a 0 -d $(DEVICE) -s 0x08000000 -D $(BIN)
+	$(DFU_UTIL) -a 0 -d $(DEVICE) -s 0x08000000 -D $(BUILD)/firmware.bin
 
 debug:
 	@echo $(SOURCES)

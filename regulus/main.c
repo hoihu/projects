@@ -3,24 +3,36 @@
 #include <stdio.h>
 #include <string.h>
 
+
+
+#include "usbd_cdc_if.h"
 #include "py/nlr.h"
 #include "py/compile.h"
+#include "readline.h"
 #include "py/runtime.h"
 #include "py/repl.h"
 #include "py/gc.h"
 #include "pyexec.h"
 
 USBD_HandleTypeDef USBD_Device;
-
-
-uint8_t CDC_BUF[128];
-
+extern uint8_t* UserRXBuf;
 static char *stack_top;
 static char heap[2048];
+extern volatile uint16_t is_initalized;
+
+// #define MICROPY_REPL_EVENT_DRIVEN 1
 
 int main(void) {
+	// uint16_t i;
 	int stack_dummy;
 	stack_top = (char*)&stack_dummy;
+
+	gc_init(heap, heap + sizeof(heap));
+	mp_init();
+	readline_init0();
+
+	pyexec_event_repl_init();
+
 	// Initialize the CDC Application
 	USBD_Init(&USBD_Device,&USBD_CDC_Descriptor,0);
 	// Add Supported Class
@@ -30,24 +42,36 @@ int main(void) {
 	// Start Device Process
 	USBD_Start(&USBD_Device);
 
-	gc_init(heap, heap + sizeof(heap));
-	mp_init();
-	// pyexec_event_repl_init();
-	// for (;;) {
-	// 	int c = mp_hal_stdin_rx_chr();
-	// 	if (pyexec_event_repl_process_char(c)) {
-	// 		break;
-	// 	}
-	// }
+	is_initalized = 1;
+
+	for (;;) {
+
+		// pyexec_event_repl_init();
+
+		// mp_hal_stdout_tx_str("MicroPython \r\n");
+		// // if (usb_char_received) {
+		// CDC_Itf_Transmit(UserRXBuf,0);
+		// }
+		// uint8_t c = mp_hal_stdin_rx_chr();
+		// CDC_Itf_Transmit(CDC_BUF,11);
+        // CDC_Itf_Transmit(&c,1);
+        // CDC_Itf_Transmit(&c,1);
+        // CDC_Itf_Transmit(&c,1);
+
+		// c=c*2;
+		// if (pyexec_event_repl_process_char(c)) {
+		// 	break;
+		// }
+	}
 	// #else
-	pyexec_friendly_repl();
+	// pyexec_friendly_repl();
 	// #endif
 	mp_deinit();
 	return 0;
 }
 
 void gc_collect(void) {
-    // TODO possibly need to trace registers
+    //TODO possibly need to trace registers
     void *dummy;
     gc_collect_start();
     // Node: stack is ascending

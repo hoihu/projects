@@ -1,5 +1,18 @@
 #include "usbd_cdc_if.h"
 
+#include "pendsv.h"
+
+#include "py/obj.h"
+
+#include "py/nlr.h"
+#include "py/compile.h"
+#include "py/runtime.h"
+#include "py/repl.h"
+#include "py/gc.h"
+#include "pyexec.h"
+#include "irq.h"
+
+volatile uint32_t rec_length;
 
 // USB device handle
 USBD_HandleTypeDef USBD_Device;
@@ -19,19 +32,19 @@ USBD_CDC_LineCodingTypeDef LineCoding = {
 
 // Received data from CDC will be stored in this buffer
 uint8_t UserRXBuf[APP_RX_DATA_SIZE];
-uint32_t UserRXBufCur = 0; // Points to next available character in RX buffer
-uint32_t UserRXBufLen = 0; // Counts number of valid characters in RX buffer
-
+uint32_t UserRxBufCur = 0; // Points to next available character in RX buffer
+uint32_t UserRxBufLen = 0; // Counts number of valid characters in RX buffer
+uint16_t volatile is_initalized = 0;
 // Buffer to store data to be transfered to CDC
 uint8_t UserTXBuf[APP_TX_DATA_SIZE];
 uint32_t UserTXBufCur = 0;
-
+// static int user_interrupt_char = -1;
+// static void *user_interrupt_data = NULL;
 
 // Private function prototypes
 static int8_t CDC_Itf_Init(void);
 static int8_t CDC_Itf_DeInit(void);
 static int8_t CDC_Itf_Control(uint8_t cmd, uint8_t* pbuf, uint16_t length);
-static int8_t CDC_Itf_Receive(uint8_t* pbuf, uint32_t *Len);
 
 
 // CDC interface control procedures
@@ -50,8 +63,8 @@ static int8_t CDC_Itf_Init(void) {
 	USBD_CDC_SetRxBuffer(&USBD_Device,UserRXBuf);
 
 	// Initialize buffer pointers
-	UserRXBufCur = 0;
-	UserRXBufLen = 0;
+	UserRxBufCur = 0;
+	UserRxBufLen = 0;
 
 	return (USBD_OK);
 }
@@ -118,21 +131,43 @@ static int8_t CDC_Itf_Control(uint8_t cmd, uint8_t* pbuf, uint16_t length) {
 // input:
 //   pBuf - pointer to the data buffer
 //   length - pointer to the variable with a size of buffer
-static int8_t CDC_Itf_Receive(uint8_t* pBuf, uint32_t *length) {
-	uint32_t i;
+int8_t CDC_Itf_Receive(uint8_t* Buf, uint32_t *length) {
+	uint16_t i;
+	// TODO improve this function to implement a circular buffer
 
-	// Copy received data from the RX buffer to the RX buffer
-	for (i = 0; i < *length; i++) UserTXBuf[i] = UserRXBuf[i];
+    // // if we have processed all the characters, reset the buffer counters
+    // if (UserRxBufCur > 0 && UserRxBufCur >= UserRxBufLen) {
+    //     // memmove(UserRxBuffer, UserRxBuffer + UserRxBufLen, *Len);
+    //     UserRxBufCur = 0;
+    //     UserRxBufLen = 0;
+    // }
+	//
+    // if (UserRxBufLen + *length + CDC_DATA_FS_MAX_PACKET_SIZE > APP_RX_DATA_SIZE) {
+    //     // if we keep this data then the buffer can overflow on the next USB rx
+    //     // so we don't increment the length, and throw this data away
+    // } else {
+    //     // data fits, leaving room for another CDC_DATA_FS_OUT_PACKET_SIZE
+    //     UserRxBufLen += *length;
+    // }
 
-	// Transmit received data back (loop-back mode)
-	USBD_CDC_SetTxBuffer(&USBD_Device,&UserTXBuf[0],*length);
-	USBD_CDC_TransmitPacket(&USBD_Device);
+	rec_length = *length;
 
-	// Initiate next USB packet transfer
-	USBD_CDC_SetRxBuffer(&USBD_Device,&UserRXBuf[0]);
-	USBD_CDC_ReceivePacket(&USBD_Device);
+	if (is_initalized) {
+		// Transmit received data back (loop-back mode)
+		for (i = 0; i < *length; i++) {
+			UserTXBuf[i] = UserRXBuf[i];
+			pyexec_event_repl_process_char(UserRXBuf[i]);
+		}
+		// USBD_CDC_SetTxBuffer(&USBD_Device,&UserTXBuf[0],*length);
+		// USBD_CDC_TransmitPacket(&USBD_Device);
+	}
 
-	return (USBD_OK);
+    // initiate next USB packet transfer, to append to existing data in buffer
+    USBD_CDC_SetRxBuffer(&USBD_Device, UserRXBuf);
+    // USBD_CDC_SetRxBuffer(&USBD_Device, UserRXBuf+ UserRxBufLen);
+    USBD_CDC_ReceivePacket(&USBD_Device);
+
+    return USBD_OK;
 }
 
 // Send data from specified buffer over CDC interface
