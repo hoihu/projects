@@ -39,7 +39,8 @@ void SystemClock_Config(void);
 
 /* Private functions ---------------------------------------------------------*/
 
-const char *hello = "HELLO CDC!!";
+const char *hello = "HELLO CDC!!HELLO CDC!!HELLO CDC!!HELLO CDC!!HELLO CDC!!YEAHYEAHYEAHYEAHYEAHYEAHYEAHYEAHYEAHYEAHYEAHYEAHYEAHYEAHHAPPYHAPPYHAPPYHAPPYHAPPYHAPPYHAPPYHAPPYHAPPYHAPPYHAPPYHAPPYHAPPYHAPPYUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSS";
+
 
 /**
   * @brief  Main program
@@ -80,13 +81,14 @@ int main(void)
 
   /* Start Device Process */
   USBD_Start(&USBD_Device);
+  // CDC_Itf_Transmit((uint8_t*)hello,sizeof(hello));
 
   /* Run Application (Interrupt mode) */
   uint32_t i;
   while (1)
   {
-      CDC_Itf_Transmit((uint8_t*)hello,sizeof(hello));
       for (i = 0x002FFFFF; i--; );
+      CDC_Itf_Transmit((uint8_t*)hello,100);
 
   }
 }
