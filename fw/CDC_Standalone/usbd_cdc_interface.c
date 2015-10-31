@@ -55,6 +55,9 @@ uint32_t UserTxBufPtrOut = 0; /* Increment this pointer or roll it back to
 /* USB handler declaration */
 extern USBD_HandleTypeDef  USBD_Device;
 
+extern void callback_usb_rx(uint8_t* Buf, uint32_t *Len);
+
+
 /* Private function prototypes -----------------------------------------------*/
 static int8_t CDC_Itf_Init     (void);
 static int8_t CDC_Itf_DeInit   (void);
@@ -204,8 +207,13 @@ void CDC_Itf_TxFinished(void) {
   */
 static int8_t CDC_Itf_Receive(uint8_t* Buf, uint32_t *Len)
 {
-  // HAL_UART_Transmit_DMA(&UartHandle, Buf, *Len);
-  return (USBD_OK);
+
+    callback_usb_rx(Buf, Len);
+
+    USBD_CDC_SetRxBuffer(&USBD_Device, UserRxBuffer);
+    USBD_CDC_ReceivePacket(&USBD_Device);
+
+    return (USBD_OK);
 }
 
 
