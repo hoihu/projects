@@ -16,8 +16,8 @@
   *
   *        http://www.st.com/software_license_agreement_liberty_v2
   *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   * See the License for the specific language governing permissions and
   * limitations under the License.
@@ -34,24 +34,24 @@
 
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
-/* User can use this section to tailor USARTx/UARTx instance used and associated 
+/* User can use this section to tailor USARTx/UARTx instance used and associated
    resources */
 /* Definition for USARTx clock resources */
 #define USARTx                           USART1
 #define USARTx_CLK_ENABLE()              __HAL_RCC_USART1_CLK_ENABLE();
 #define DMAx_CLK_ENABLE()                __HAL_RCC_DMA1_CLK_ENABLE()
 #define USARTx_RX_GPIO_CLK_ENABLE()      __HAL_RCC_GPIOA_CLK_ENABLE()
-#define USARTx_TX_GPIO_CLK_ENABLE()      __HAL_RCC_GPIOA_CLK_ENABLE() 
+#define USARTx_TX_GPIO_CLK_ENABLE()      __HAL_RCC_GPIOA_CLK_ENABLE()
 
 #define USARTx_FORCE_RESET()             __HAL_RCC_USART1_FORCE_RESET()
 #define USARTx_RELEASE_RESET()           __HAL_RCC_USART1_RELEASE_RESET()
 
 /* Definition for USARTx Pins */
 #define USARTx_TX_PIN                    GPIO_PIN_9
-#define USARTx_TX_GPIO_PORT              GPIOA  
+#define USARTx_TX_GPIO_PORT              GPIOA
 #define USARTx_TX_AF                     GPIO_AF7_USART1
 #define USARTx_RX_PIN                    GPIO_PIN_10
-#define USARTx_RX_GPIO_PORT              GPIOA 
+#define USARTx_RX_GPIO_PORT              GPIOA
 #define USARTx_RX_AF                     GPIO_AF7_USART1
 
 /* Definition for USARTx's NVIC: used for receiving data over Rx pin */
@@ -83,7 +83,7 @@
 #define CDC_POLLING_INTERVAL             5 /* in ms. The max is 65 and the min is 1 */
 
 extern USBD_CDC_ItfTypeDef  USBD_CDC_fops;
-
+extern uint8_t CDC_Itf_Transmit(uint8_t* pBuf, uint16_t length);
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
 #endif /* __USBD_CDC_IF_H */

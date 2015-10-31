@@ -20,15 +20,12 @@ CROSS = 1
 CROSS_COMPILE = arm-none-eabi-
 
 CMSIS_DIR=cmsis
-CDC_DIR=cdc
-CMSIS_BOOT_DIR=cmsis_boot
-CMSIS_LIB_DIR=cmsis_lib
-USBDEV_DIR=usbd
+CMSIS_INC_DIR= $(CMSIS_DIR)/Include
+USB_DIR=cube_usb
+USB_CDC_DIR=$(USB_DIR)/cdc
+USB_CORE_DIR=$(USB_DIR)/core
+CUBE_HAL_DIR = cube_hal
 
-CMSIS_DIR=cmsis
-CMSIS_BOOT_DIR=cmsis_boot
-CMSIS_LIB_DIR=cmsis_lib
-USB_DEV_DIR=usbd
 STMHAL_DIR = $(UPY_ROOT_DIR)/stmhal
 
 DFU= $(UPY_ROOT_DIR)/tools/dfu.py
@@ -39,11 +36,12 @@ DEVICE=0483:df11
 #regulus
 INC =  -I.
 INC += -I$(BUILD)
-INC += -Icdc
-INC += -I$(CMSIS_LIB_DIR)/include
+INC += -I$(CMSIS_INC_DIR)
 INC += -I$(CMSIS_DIR)
-INC += -I$(CMSIS_BOOT_DIR)
-INC += -I$(USBDEV_DIR)
+INC += -I$(USB_DIR)
+INC += -I$(CUBE_HAL_DIR)/Inc
+INC += -I$(USB_CDC_DIR)
+INC += -I$(USB_CORE_DIR)
 
 #upy staff
 INC += -I$(UPY_ROOT_DIR)
@@ -51,7 +49,8 @@ INC += -I$(STMHAL_DIR)
 INC += -I$(UPY_PY_DIR)
 INC += -I$(UPY_ROOT_DIR)/lib/mp-readline
 
-CFLAGS  = $(INC) -Wall -Wpointer-arith -Werror -ansi -std=gnu99 -nostdlib
+CFLAGS  = $(INC) -Wall -Wpointer-arith -Werror -ansi -std=gnu99 -nostdlib -DSTM32L151xC
+CFLAGS  += -DSTM32_HAL_H='<stm32l1xx_hal.h>'
 CFLAGS  += -mthumb -mabi=aapcs-linux -mfpu=fpv4-sp-d16 -fsingle-precision-constant -Wdouble-promotion
 CFLAGS  += -mtune=cortex-m3 -mcpu=cortex-m3 -mfloat-abi=soft
 CFLAGS  += -fdata-sections -ffunction-sections
@@ -63,14 +62,12 @@ LDFLAGS += --gc-sections -Map=$@.map
 
 
 SRC_C = \
-	$(wildcard $(CMSIS_BOOT_DIR)/*.c) \
-	$(wildcard $(CMSIS_BOOT_DIR)/Startup/*.c) \
-	$(wildcard $(CMSIS_LIB_DIR)/Source/*.c) \
-	$(wildcard $(USB_DEV_DIR)/*.c) \
-	$(wildcard cdc/*.c) \
-	usb_ll.c \
-	usb_uart.c \
-	main.c
+	$(wildcard $(CMSIS_DIR)/*.c) \
+	$(wildcard $(CUBE_HAL_DIR)/Src/*.c) \
+	$(wildcard $(USB_CDC_DIR)/*.c) \
+	$(wildcard $(USB_CORE_DIR)/*.c) \
+	$(wildcard $(USB_DIR)/*.c) \
+	$(wildcard ./*.c) \
 
 STM_SRC_C = \
 	$(STMHAL_DIR)/printf.c \

@@ -1,17 +1,20 @@
 #ifndef __MAIN_H
 #define __MAIN_H
 
-#include "stm32l1xx.h"
-
+/* Includes ------------------------------------------------------------------*/
+#include "stm32l1xx_hal.h"
+// #include "stm32l152d_eval.h"
 #include "usbd_core.h"
 #include "usbd_desc.h"
 #include "usbd_cdc.h"
-#include "usbd_cdc_if.h"
+#include "usbd_cdc_interface.h"
 
-#include "usb_ll.h"
+/* Exported types ------------------------------------------------------------*/
+/* Exported constants --------------------------------------------------------*/
+/* Exported macro ------------------------------------------------------------*/
+/* Exported functions ------------------------------------------------------- */
+void Toggle_Leds(void);
+void Error_Handler(void);
 
-// #include "uart.h"
-
-#include "stdio.h"
 
 #endif // __MAIN_H
