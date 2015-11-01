@@ -103,8 +103,8 @@ int main(void)
   while (1)
   {
       for (i = 0x002FFFFF; i--; );
-      CDC_Itf_Transmit((uint8_t*)hello,10);
-      CDC_Itf_Transmit((uint8_t*)yeah,10);
+      CDC_Itf_Transmit((uint8_t*)hello,40);
+      CDC_Itf_Transmit((uint8_t*)yeah,40);
 
   }
 }
