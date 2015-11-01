@@ -39,7 +39,8 @@ void SystemClock_Config(void);
 
 /* Private functions ---------------------------------------------------------*/
 
-// const char *hello = "HELLO CDC!!HELLO CDC!!HELLO CDC!!HELLO CDC!!HELLO CDC!!YEAHYEAHYEAHYEAHYEAHYEAHYEAHYEAHYEAHYEAHYEAHYEAHYEAHYEAHHAPPYHAPPYHAPPYHAPPYHAPPYHAPPYHAPPYHAPPYHAPPYHAPPYHAPPYHAPPYHAPPYHAPPYUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSSUUUUUPPPPSSS";
+const char *hello = "123456789 987654321 ....................";
+const char *yeah =  "abcdefghi ihgfedcba --------------------";
 
 uint8_t test_buffer[100];
 
@@ -54,7 +55,7 @@ void callback_usb_rx(uint8_t* Buf, uint32_t *Len) {
         // }
     }
 
-    CDC_Itf_Transmit((uint8_t*)test_buffer,80);
+    // CDC_Itf_Transmit((uint8_t*)test_buffer,80);
 }
 /**
   * @brief  Main program
@@ -98,11 +99,12 @@ int main(void)
   // CDC_Itf_Transmit((uint8_t*)hello,sizeof(hello));
 
   /* Run Application (Interrupt mode) */
-  // uint32_t i;
+  uint32_t i;
   while (1)
   {
-    //   for (i = 0x002FFFFF; i--; );
-    //   CDC_Itf_Transmit((uint8_t*)hello,100);
+      for (i = 0x002FFFFF; i--; );
+      CDC_Itf_Transmit((uint8_t*)hello,10);
+      CDC_Itf_Transmit((uint8_t*)yeah,10);
 
   }
 }

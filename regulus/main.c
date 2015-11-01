@@ -21,6 +21,20 @@ static char heap[2048];
 void SystemClock_Config(void);
 
 // #define MICROPY_REPL_EVENT_DRIVEN 1
+// uint8_t test_buffer[100];
+
+void callback_usb_rx(uint8_t* Buf, uint32_t *Len) {
+    // uint16_t i=0;
+    // uint16_t a=0;
+	uint8_t backup = Buf[0];
+	pyexec_event_repl_process_char(backup);
+	//
+    // while (a<80) {
+    //     test_buffer[a++] = Buf[0];
+    // }
+	//
+    // CDC_Itf_Transmit((uint8_t*)test_buffer,80);
+}
 
 int main(void) {
 	// uint16_t i;
@@ -34,6 +48,8 @@ int main(void) {
 
 	gc_init(heap, heap + sizeof(heap));
 	mp_init();
+
+	pyexec_mode_kind = PYEXEC_MODE_FRIENDLY_REPL;
 	readline_init0();
 
 	pyexec_event_repl_init();
@@ -50,15 +66,15 @@ int main(void) {
 	/* Start Device Process */
 	USBD_Start(&USBD_Device);
 
-
-	// is_initalized = 1;
-
+	// uint32_t i;
 	for (;;) {
+		// for (i = 0x002FFFFF; i--; );
+		// mp_hal_stdout_tx_str("MicroPython \r\n");
 
 		// pyexec_event_repl_init();
-		USBD_CDC_TxAlways((const uint8_t*)"test", 4);
+		// USBD_CDC_TxAlways((const uint8_t*)"test", 4);
 
-		// mp_hal_stdout_tx_str("MicroPython \r\n");
+
 		// // if (usb_char_received) {
 		// CDC_Itf_Transmit(UserRXBuf,0);
 		// }

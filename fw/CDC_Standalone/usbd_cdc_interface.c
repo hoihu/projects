@@ -27,6 +27,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "ringbuffer.h"
+#include <stdbool.h>
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
   * @{
@@ -42,19 +44,19 @@
 #define APP_RX_DATA_SIZE  1024
 #define APP_TX_DATA_SIZE  1024
 
-void CDC_Itf_TxFinished(void) ;
+void CDC_Itf_TxFinished(void);
+
+
 
 uint8_t UserRxBuffer[APP_RX_DATA_SIZE];/* Received Data over USB are stored in this buffer */
 uint8_t UserTxBuffer[APP_TX_DATA_SIZE];/* Received Data over UART (CDC interface) are stored in this buffer */
-uint32_t BuffLength;
-uint32_t UserTxBufPtrIn = 0;/* Increment this pointer or roll it back to
-                               start address when data are received over USART */
-uint32_t UserTxBufPtrOut = 0; /* Increment this pointer or roll it back to
-                                 start address when data are sent over USB */
+uint8_t tx_buffer[256];
+bool CDC_is_busy;
+
+ringbuffer_t tx_ringbuffer;
 
 /* USB handler declaration */
 extern USBD_HandleTypeDef  USBD_Device;
-
 extern void callback_usb_rx(uint8_t* Buf, uint32_t *Len);
 
 
@@ -83,11 +85,13 @@ USBD_CDC_ItfTypeDef USBD_CDC_fops =
   */
 static int8_t CDC_Itf_Init(void)
 {
-  /*##-5- Set Application Buffers ############################################*/
-  USBD_CDC_SetTxBuffer(&USBD_Device, UserTxBuffer, 0);
-  USBD_CDC_SetRxBuffer(&USBD_Device, UserRxBuffer);
+    CDC_is_busy = false;
 
-  return (USBD_OK);
+    ringbuffer_configure(&tx_ringbuffer, tx_buffer, 200);
+    /*##-5- Set Application Buffers ############################################*/
+    USBD_CDC_SetTxBuffer(&USBD_Device, tx_ringbuffer.data, 0);
+    USBD_CDC_SetRxBuffer(&USBD_Device, UserRxBuffer);
+    return (USBD_OK);
 }
 
 /**
@@ -167,34 +171,23 @@ static int8_t CDC_Itf_Control (uint8_t cmd, uint8_t* pbuf, uint16_t length)
 
 void CDC_Itf_TxFinished(void) {
     // CDC_Itf_Transmit((uint8_t*)test,sizeof(test));
-    uint32_t buffptr;
-    uint32_t buffsize;
+    // uint16_t i=0;
 
-    if(UserTxBufPtrOut != UserTxBufPtrIn)
-    {
-      if(UserTxBufPtrOut > UserTxBufPtrIn) /* rollback */
-      {
-        buffsize = APP_RX_DATA_SIZE - UserTxBufPtrOut;
-      }
-      else
-      {
-        buffsize = UserTxBufPtrIn - UserTxBufPtrOut;
-      }
-
-      buffptr = UserTxBufPtrOut;
-
-      USBD_CDC_SetTxBuffer(&USBD_Device, (uint8_t*)&UserTxBuffer[buffptr], buffsize);
-
-      if(USBD_CDC_TransmitPacket(&USBD_Device) == USBD_OK)
-      {
-        UserTxBufPtrOut += buffsize;
-        if (UserTxBufPtrOut == APP_RX_DATA_SIZE)
-        {
-          UserTxBufPtrOut = 0;
-        }
-      }
+    if (ringbuffer_is_empty(&tx_ringbuffer)) {
+        CDC_is_busy = false;
+        return;
     }
 
+    CDC_is_busy = true;
+    if (tx_ringbuffer.push_ptr < tx_ringbuffer.pop_ptr) {
+        // wraparound
+        USBD_CDC_SetTxBuffer(&USBD_Device, tx_ringbuffer.pop_ptr, tx_ringbuffer.data + tx_ringbuffer.sizeof_data - tx_ringbuffer.pop_ptr );
+        tx_ringbuffer.pop_ptr = tx_ringbuffer.data;
+    } else {
+        USBD_CDC_SetTxBuffer(&USBD_Device, tx_ringbuffer.pop_ptr, tx_ringbuffer.push_ptr - tx_ringbuffer.pop_ptr );
+        tx_ringbuffer.pop_ptr = tx_ringbuffer.push_ptr;
+    }
+    USBD_CDC_TransmitPacket(&USBD_Device);
 }
 
 /**
@@ -216,18 +209,41 @@ static int8_t CDC_Itf_Receive(uint8_t* Buf, uint32_t *Len)
     return (USBD_OK);
 }
 
+void CDC_add_tx_buffer(uint8_t* pBuf, uint16_t length) {
+    // copy over to ringbuffer
+    uint16_t i = 0;
+    while (i<length) {
+        ringbuffer_push(&tx_ringbuffer, pBuf[i++]);
+    }
+}
+
 
 // Send data from specified buffer over CDC interface
 // input:
 //   pBuf - pointer to the data buffer
 //   length - size of buffer
 uint8_t CDC_Itf_Transmit(uint8_t* pBuf, uint16_t length) {
-	uint8_t result = USBD_OK;
 
-	USBD_CDC_SetTxBuffer(&USBD_Device,pBuf,length);
-	result = USBD_CDC_TransmitPacket(&USBD_Device);
+    CDC_add_tx_buffer(pBuf, length);
+    if (!CDC_is_busy) {
+        // no transmission in progress, so initiate first Packet
+        // all other sub packets will then be handled by the tx_complete callbacks
+        if (tx_ringbuffer.push_ptr < tx_ringbuffer.pop_ptr) {
+            // wraparound
+            USBD_CDC_SetTxBuffer(&USBD_Device, tx_ringbuffer.pop_ptr, tx_ringbuffer.data + tx_ringbuffer.sizeof_data - tx_ringbuffer.pop_ptr );
+            tx_ringbuffer.pop_ptr = tx_ringbuffer.data;
+        } else {
+            USBD_CDC_SetTxBuffer(&USBD_Device, tx_ringbuffer.pop_ptr, tx_ringbuffer.push_ptr - tx_ringbuffer.pop_ptr );
+            tx_ringbuffer.pop_ptr = tx_ringbuffer.push_ptr;
+        }
 
-	return result;
+        USBD_CDC_TransmitPacket(&USBD_Device);
+        // USBD_CDC_SetTxBuffer(&USBD_Device, (uint8_t*)&UserTxBuffer, length);
+        // USBD_CDC_TransmitPacket(&USBD_Device);
+        CDC_is_busy = true;
+    }
+
+    return 1;
 }
 
 
