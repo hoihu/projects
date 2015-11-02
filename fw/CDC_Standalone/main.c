@@ -97,12 +97,12 @@ int main(void)
   // CDC_Itf_Transmit((uint8_t*)hello,sizeof(hello));
 
   /* Run Application (Interrupt mode) */
-  // uint32_t i;
+  uint32_t i;
   while (1)
   {
-    //   for (i = 0x002FFFFF; i--; );
-    //   CDC_Itf_Transmit((uint8_t*)hello,40);
-    //   CDC_Itf_Transmit((uint8_t*)yeah,40);
+      for (i = 0x002FFFFF; i--; );
+      CDC_Itf_Transmit((uint8_t*)hello,40);
+      CDC_Itf_Transmit((uint8_t*)yeah,40);
 
   }
 }

@@ -15,8 +15,10 @@
 USBD_HandleTypeDef USBD_Device;
 extern uint8_t* UserRXBuf;
 static char *stack_top;
-static char heap[2048];
+static char heap[4096];
 // extern volatile uint16_t is_initalized;
+
+const char *hello = "123456789 987654321 ....................";
 
 void SystemClock_Config(void);
 
@@ -26,14 +28,9 @@ void SystemClock_Config(void);
 void callback_usb_rx(uint8_t* Buf, uint32_t *Len) {
     // uint16_t i=0;
     // uint16_t a=0;
-	uint8_t backup = Buf[0];
-	pyexec_event_repl_process_char(backup);
-	//
-    // while (a<80) {
-    //     test_buffer[a++] = Buf[0];
-    // }
-	//
-    // CDC_Itf_Transmit((uint8_t*)test_buffer,80);
+	// uint8_t backup = Buf[0];
+	// pyexec_event_repl_process_char(backup);
+
 }
 
 int main(void) {
@@ -49,10 +46,10 @@ int main(void) {
 	gc_init(heap, heap + sizeof(heap));
 	mp_init();
 
-	pyexec_mode_kind = PYEXEC_MODE_FRIENDLY_REPL;
+	// pyexec_mode_kind = PYEXEC_MODE_FRIENDLY_REPL;
 	readline_init0();
 
-	pyexec_event_repl_init();
+	// pyexec_event_repl_init();
 
 	/* Init Device Library */
 	USBD_Init(&USBD_Device, &VCP_Desc, 0);
@@ -61,14 +58,20 @@ int main(void) {
 	USBD_RegisterClass(&USBD_Device, USBD_CDC_CLASS);
 
 	/* Add CDC Interface Class */
-	USBD_CDC_RegisterInterface(&USBD_Device, (USBD_CDC_ItfTypeDef *)&USBD_CDC_fops);
+	USBD_CDC_RegisterInterface(&USBD_Device,&USBD_CDC_fops);
 
 	/* Start Device Process */
 	USBD_Start(&USBD_Device);
 
-	uint32_t i;
+	// uint32_t i;
 	for (;;) {
-		for (i = 0x002FFFFF; i--; );
+	    pyexec_friendly_repl();
+
+		// for (i = 0x002FFFFF; i--; );
+		// CDC_Itf_Transmit((uint8_t*)hello,40);
+		// CDC_Itf_Transmit((uint8_t*)hello,40);
+		// USBD_CDC_TransmitPacket(&USBD_Device);
+
 		// mp_hal_stdout_tx_str("MicroPython \r\n");
 
 		// pyexec_event_repl_init();
@@ -78,11 +81,11 @@ int main(void) {
 		// // if (usb_char_received) {
 		// CDC_Itf_Transmit(UserRXBuf,0);
 		// }
-		uint8_t c = mp_hal_stdin_rx_chr();
-		// CDC_Itf_Transmit(CDC_BUF,11);
-        CDC_Itf_Transmit(&c,1);
-        CDC_Itf_Transmit(&c,1);
-        CDC_Itf_Transmit(&c,1);
+		// uint8_t c = mp_hal_stdin_rx_chr();
+		// // CDC_Itf_Transmit(CDC_BUF,11);
+        // CDC_Itf_Transmit(&c,1);
+        // CDC_Itf_Transmit(&c,1);
+        // CDC_Itf_Transmit(&c,1);
 
 		// c=c*2;
 		// if (pyexec_event_repl_process_char(c)) {
