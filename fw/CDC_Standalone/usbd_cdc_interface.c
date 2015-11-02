@@ -51,13 +51,15 @@ void CDC_send_packet(void);
 
 uint8_t UserRxBuffer[APP_RX_DATA_SIZE];/* Received Data over USB are stored in this buffer */
 uint8_t tx_buffer[1024];
+uint8_t rx_buffer[1024];
 bool CDC_is_busy;
 
 ringbuffer_t tx_ringbuffer;
+ringbuffer_t rx_ringbuffer;
 
 /* USB handler declaration */
 extern USBD_HandleTypeDef  USBD_Device;
-extern void callback_usb_rx(uint8_t* Buf, uint32_t *Len);
+extern void usb_rx_callback(ringbuffer_t*);
 
 
 /* Private function prototypes -----------------------------------------------*/
@@ -88,6 +90,7 @@ static int8_t CDC_Itf_Init(void)
     CDC_is_busy = false;
 
     ringbuffer_configure(&tx_ringbuffer, tx_buffer, 1024);
+    ringbuffer_configure(&rx_ringbuffer, rx_buffer, 1024);
     /*##-5- Set Application Buffers ############################################*/
     USBD_CDC_SetTxBuffer(&USBD_Device, tx_ringbuffer.data, 0);
     USBD_CDC_SetRxBuffer(&USBD_Device, UserRxBuffer);
@@ -188,8 +191,12 @@ void CDC_Itf_TxFinished(void) {
   */
 static int8_t CDC_Itf_Receive(uint8_t* Buf, uint32_t *Len)
 {
+    uint32_t i=0;
+    while (i < *Len) {
+        ringbuffer_push(&rx_ringbuffer,Buf[i++]);
+    }
 
-    callback_usb_rx(Buf, Len);
+    usb_rx_callback(&rx_ringbuffer);
 
     USBD_CDC_SetRxBuffer(&USBD_Device, UserRxBuffer);
     USBD_CDC_ReceivePacket(&USBD_Device);
@@ -220,7 +227,9 @@ uint8_t CDC_Itf_Transmit(uint8_t* pBuf, uint16_t length) {
     }
     if (!CDC_is_busy) {
         // no transmission in progress, so initiate first Packet
-        // all other sub packets will then be handled by the tx_complete callbacks
+        // all other sub packets will then be handled by the tx_complete callback
+        // note that this approach does not use a timer to periodically poll -
+        // hence it should be more efficient (no polling if ringbuffer is empty...)
         CDC_send_packet();
         CDC_is_busy = true;
     }

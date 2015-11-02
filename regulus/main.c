@@ -66,9 +66,9 @@ int main(void) {
 	/* Start Device Process */
 	USBD_Start(&USBD_Device);
 
-	// uint32_t i;
+	uint32_t i;
 	for (;;) {
-		// for (i = 0x002FFFFF; i--; );
+		for (i = 0x002FFFFF; i--; );
 		// mp_hal_stdout_tx_str("MicroPython \r\n");
 
 		// pyexec_event_repl_init();
@@ -78,11 +78,11 @@ int main(void) {
 		// // if (usb_char_received) {
 		// CDC_Itf_Transmit(UserRXBuf,0);
 		// }
-		// uint8_t c = mp_hal_stdin_rx_chr();
+		uint8_t c = mp_hal_stdin_rx_chr();
 		// CDC_Itf_Transmit(CDC_BUF,11);
-        // CDC_Itf_Transmit(&c,1);
-        // CDC_Itf_Transmit(&c,1);
-        // CDC_Itf_Transmit(&c,1);
+        CDC_Itf_Transmit(&c,1);
+        CDC_Itf_Transmit(&c,1);
+        CDC_Itf_Transmit(&c,1);
 
 		// c=c*2;
 		// if (pyexec_event_repl_process_char(c)) {

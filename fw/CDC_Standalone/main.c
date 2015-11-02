@@ -27,6 +27,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "ringbuffer.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -42,20 +43,17 @@ void SystemClock_Config(void);
 const char *hello = "123456789 987654321 ....................";
 const char *yeah =  "abcdefghi ihgfedcba --------------------";
 
-uint8_t test_buffer[100];
+uint8_t test_buffer[1024];
 
-void callback_usb_rx(uint8_t* Buf, uint32_t *Len) {
-    // uint16_t i=0;
-    uint16_t a=0;
+void usb_rx_callback(ringbuffer_t* rx_buffer) {
+    uint16_t i=0;
 
-    while (a<80) {
-        test_buffer[a++] = Buf[0];
-        // if (i>=1) {
-        //     i=0;
-        // }
+    while (!ringbuffer_is_empty(rx_buffer)) {
+        test_buffer[i++] = ringbuffer_pop(rx_buffer);
     }
 
-    // CDC_Itf_Transmit((uint8_t*)test_buffer,80);
+    CDC_Itf_Transmit(test_buffer,i);
+    CDC_Itf_Transmit(test_buffer,i);
 }
 /**
   * @brief  Main program
@@ -99,12 +97,12 @@ int main(void)
   // CDC_Itf_Transmit((uint8_t*)hello,sizeof(hello));
 
   /* Run Application (Interrupt mode) */
-  uint32_t i;
+  // uint32_t i;
   while (1)
   {
-      for (i = 0x002FFFFF; i--; );
-      CDC_Itf_Transmit((uint8_t*)hello,40);
-      CDC_Itf_Transmit((uint8_t*)yeah,40);
+    //   for (i = 0x002FFFFF; i--; );
+    //   CDC_Itf_Transmit((uint8_t*)hello,40);
+    //   CDC_Itf_Transmit((uint8_t*)yeah,40);
 
   }
 }
