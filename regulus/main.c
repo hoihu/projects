@@ -7,48 +7,52 @@
 #include "py/nlr.h"
 #include "py/compile.h"
 #include "readline.h"
+#include "gccollect.h"
 #include "py/runtime.h"
+#include "py/stackctrl.h"
 #include "py/repl.h"
 #include "py/gc.h"
 #include "pyexec.h"
+#include MICROPY_HAL_H
 
 USBD_HandleTypeDef USBD_Device;
 extern uint8_t* UserRXBuf;
-static char *stack_top;
-static char heap[4096];
+
+extern uint32_t _heap_start;
+extern uint32_t _heap_end;
+// static char *stack_top;
+// static char heap[4096];
 // extern volatile uint16_t is_initalized;
 
-const char *hello = "123456789 987654321 ....................";
-
 void SystemClock_Config(void);
-
-// #define MICROPY_REPL_EVENT_DRIVEN 1
-// uint8_t test_buffer[100];
-
-void callback_usb_rx(uint8_t* Buf, uint32_t *Len) {
-    // uint16_t i=0;
-    // uint16_t a=0;
-	// uint8_t backup = Buf[0];
-	// pyexec_event_repl_process_char(backup);
-
-}
+void callback_usb_rx(uint8_t* Buf, uint32_t *Len) {}
+static char *stack_top;
+// static char heap[4096];
 
 int main(void) {
 	// uint16_t i;
 	int stack_dummy;
-	stack_top = (char*)&stack_dummy;
+    stack_top = (char*)&stack_dummy;
+	// #define SCB_CCR_STKALIGN (1 << 9)
+    // SCB_CCR |= SCB_CCR_STKALIGN;
+	mp_stack_set_limit((char*)&_ram_end - (char*)&_heap_end - 1024);
 
 	HAL_Init();
 
 	/* Configure the system clock to 32 MHz */
 	SystemClock_Config();
 
-	gc_init(heap, heap + sizeof(heap));
+	// GC init
+	MP_STATE_VM(stack_top) = (char*)&stack_dummy;
+	gc_init(&_heap_start, &_heap_end);
 	mp_init();
+	// GC init
 
+	mp_obj_list_init(mp_sys_path, 0);
+	mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR_)); // current dir (or base dir of the script)
+    mp_obj_list_init(mp_sys_argv, 0);
 	// pyexec_mode_kind = PYEXEC_MODE_FRIENDLY_REPL;
 	readline_init0();
-
 	// pyexec_event_repl_init();
 
 	/* Init Device Library */
@@ -63,38 +67,10 @@ int main(void) {
 	/* Start Device Process */
 	USBD_Start(&USBD_Device);
 
-	// uint32_t i;
 	for (;;) {
 	    pyexec_friendly_repl();
 
-		// for (i = 0x002FFFFF; i--; );
-		// CDC_Itf_Transmit((uint8_t*)hello,40);
-		// CDC_Itf_Transmit((uint8_t*)hello,40);
-		// USBD_CDC_TransmitPacket(&USBD_Device);
-
-		// mp_hal_stdout_tx_str("MicroPython \r\n");
-
-		// pyexec_event_repl_init();
-		// USBD_CDC_TxAlways((const uint8_t*)"test", 4);
-
-
-		// // if (usb_char_received) {
-		// CDC_Itf_Transmit(UserRXBuf,0);
-		// }
-		// uint8_t c = mp_hal_stdin_rx_chr();
-		// // CDC_Itf_Transmit(CDC_BUF,11);
-        // CDC_Itf_Transmit(&c,1);
-        // CDC_Itf_Transmit(&c,1);
-        // CDC_Itf_Transmit(&c,1);
-
-		// c=c*2;
-		// if (pyexec_event_repl_process_char(c)) {
-		// 	break;
-		// }
 	}
-	// #else
-	// pyexec_friendly_repl();
-	// #endif
 	mp_deinit();
 	return 0;
 }
@@ -208,14 +184,14 @@ void assert_failed(uint8_t* file, uint32_t line)
 }
 #endif
 
-void gc_collect(void) {
-    //TODO possibly need to trace registers
-    void *dummy;
-    gc_collect_start();
-    // Node: stack is ascending
-    gc_collect_root(&dummy, ((mp_uint_t)&dummy - (mp_uint_t)MP_STATE_VM(stack_top)) / sizeof(mp_uint_t));
-    gc_collect_end();
-}
+// void gc_collect(void) {
+//     //TODO possibly need to trace registers
+//     void *dummy;
+//     gc_collect_start();
+//     // Node: stack is ascending
+//     gc_collect_root(&dummy, ((mp_uint_t)&dummy - (mp_uint_t)MP_STATE_VM(stack_top)) / sizeof(mp_uint_t));
+//     gc_collect_end();
+// }
 
 mp_lexer_t *mp_lexer_new_from_file(const char *filename) {
     return NULL;

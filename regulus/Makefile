@@ -61,6 +61,10 @@ LDFLAGS = -T$(LDSCRIPT) -nostdlib
 LDFLAGS += --gc-sections -Map=$@.map
 
 
+SRC_S = \
+	$(wildcard ./*.s) \
+
+
 SRC_C = \
 	$(wildcard $(CMSIS_DIR)/*.c) \
 	$(wildcard $(CUBE_HAL_DIR)/Src/*.c) \
@@ -72,12 +76,15 @@ SRC_C = \
 STM_SRC_C = \
 	$(STMHAL_DIR)/printf.c \
 	$(STMHAL_DIR)/pyexec.c \
+	$(STMHAL_DIR)/gccollect.c \
+	$(STMHAL_DIR)/pybstdio.c \
 	$(UPY_ROOT_DIR)/lib/libc/string0.c \
 	$(UPY_ROOT_DIR)/lib/mp-readline/readline.c \
 
 OBJ =
 OBJ += $(PY_O)
 OBJ += $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
+OBJ += $(addprefix $(BUILD)/, $(SRC_S:.s=.o))
 OBJ += $(addprefix $(BUILD)/, $(STM_SRC_C:.c=.o))
 
 
