@@ -55,74 +55,35 @@
   * @param huart: UART handle pointer
   * @retval None
   */
-void HAL_UART_MspInit(UART_HandleTypeDef *huart)
-{
-  // static DMA_HandleTypeDef hdma_tx;
-  // GPIO_InitTypeDef  GPIO_InitStruct;
-  //
-  // /*##-1- Enable peripherals and GPIO Clocks #################################*/
-  // /* Enable GPIO clock */
-  // USARTx_TX_GPIO_CLK_ENABLE();
+
+void HAL_UART_MspInit(UART_HandleTypeDef *huart) {
+  GPIO_InitTypeDef  GPIO_InitStruct;
+
+  /*##-1- Enable peripherals and GPIO Clocks #################################*/
+  /* Enable GPIO TX/RX clock */
+  USARTx_TX_GPIO_CLK_ENABLE();
   // USARTx_RX_GPIO_CLK_ENABLE();
-  //
-  // /* Enable USARTx clock */
-  // USARTx_CLK_ENABLE();
-  //
-  // /* Enable DMA clock */
-  // DMAx_CLK_ENABLE();
-  //
-  // /*##-2- Configure peripheral GPIO ##########################################*/
-  // /* UART TX GPIO pin configuration  */
-  // GPIO_InitStruct.Pin       = USARTx_TX_PIN;
-  // GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
-  // GPIO_InitStruct.Pull      = GPIO_PULLUP;
-  // GPIO_InitStruct.Speed     = GPIO_SPEED_HIGH;
-  // GPIO_InitStruct.Alternate = USARTx_TX_AF;
-  //
-  // HAL_GPIO_Init(USARTx_TX_GPIO_PORT, &GPIO_InitStruct);
-  //
-  // /* UART RX GPIO pin configuration  */
+
+  /* Enable USARTx clock */
+  USARTx_CLK_ENABLE();
+
+  /*##-2- Configure peripheral GPIO ##########################################*/
+  /* UART TX GPIO pin configuration  */
+  GPIO_InitStruct.Pin       = USARTx_TX_PIN;
+  GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull      = GPIO_PULLUP;
+  GPIO_InitStruct.Speed     = GPIO_SPEED_HIGH;
+  GPIO_InitStruct.Alternate = USARTx_TX_AF;
+
+  HAL_GPIO_Init(USARTx_TX_GPIO_PORT, &GPIO_InitStruct);
+
+  /* UART RX GPIO pin configuration  */
   // GPIO_InitStruct.Pin = USARTx_RX_PIN;
   // GPIO_InitStruct.Alternate = USARTx_RX_AF;
   //
   // HAL_GPIO_Init(USARTx_RX_GPIO_PORT, &GPIO_InitStruct);
-  //
-  // /*##-3- Configure the NVIC for UART ########################################*/
-  // HAL_NVIC_SetPriority(USARTx_IRQn, 4, 0);
-  // HAL_NVIC_EnableIRQ(USARTx_IRQn);
-  //
-  // /*##-4- Configure the DMA channels ##########################################*/
-  // /* Configure the DMA handler for Transmission process */
-  // hdma_tx.Instance                 = USARTx_TX_DMA_STREAM;
-  //
-  // hdma_tx.Init.Direction           = DMA_MEMORY_TO_PERIPH;
-  // hdma_tx.Init.PeriphInc           = DMA_PINC_DISABLE;
-  // hdma_tx.Init.MemInc              = DMA_MINC_ENABLE;
-  // hdma_tx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
-  // hdma_tx.Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
-  // hdma_tx.Init.Mode                = DMA_NORMAL;
-  // hdma_tx.Init.Priority            = DMA_PRIORITY_LOW;
-  //
-  // HAL_DMA_Init(&hdma_tx);
-  //
-  // /* Associate the initialized DMA handle to the UART handle */
-  // __HAL_LINKDMA(huart, hdmatx, hdma_tx);
-  //
-  // /*##-5- Configure the NVIC for DMA #########################################*/
-  // /* NVIC configuration for DMA transfer complete interrupt (USARTx_TX) */
-  // HAL_NVIC_SetPriority(USARTx_DMA_TX_IRQn, 5, 0);
-  // HAL_NVIC_EnableIRQ(USARTx_DMA_TX_IRQn);
-  //
-  // /*##-6- Enable TIM peripherals Clock #######################################*/
-  // TIMx_CLK_ENABLE();
-  //
-  // /*##-7- Configure the NVIC for TIMx ########################################*/
-  // /* Set Interrupt Group Priority */
-  // HAL_NVIC_SetPriority(TIMx_IRQn, 5, 0);
-  //
-  // /* Enable the TIMx global Interrupt */
-  // HAL_NVIC_EnableIRQ(TIMx_IRQn);
 }
+
 
 /**
   * @brief UART MSP De-Initialization

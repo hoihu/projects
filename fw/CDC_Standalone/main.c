@@ -29,16 +29,11 @@
 #include "main.h"
 #include "ringbuffer.h"
 
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
-USBD_HandleTypeDef USBD_Device;
 
-/* Private function prototypes -----------------------------------------------*/
+USBD_HandleTypeDef USBD_Device;
+UART_HandleTypeDef UartHandle;
 void SystemClock_Config(void);
 
-/* Private functions ---------------------------------------------------------*/
 
 const char *hello = "123456789 987654321 ....................";
 const char *yeah =  "abcdefghi ihgfedcba --------------------";
@@ -74,14 +69,24 @@ int main(void)
      */
   HAL_Init();
 
+
   /* Configure the system clock to 32 MHz */
   SystemClock_Config();
 
-  /* Initialize LEDs */
-  // BSP_LED_Init(LED1);
-  // BSP_LED_Init(LED2);
-  // BSP_LED_Init(LED3);
-  // BSP_LED_Init(LED4);
+  UartHandle.Instance        = USARTx;
+
+  UartHandle.Init.BaudRate   = 115200;
+  UartHandle.Init.WordLength = UART_WORDLENGTH_8B;
+  UartHandle.Init.StopBits   = UART_STOPBITS_1;
+  UartHandle.Init.Parity     = UART_PARITY_NONE;
+  UartHandle.Init.HwFlowCtl  = UART_HWCONTROL_NONE;
+  UartHandle.Init.Mode       = UART_MODE_TX;
+
+  if (HAL_UART_Init(&UartHandle) != HAL_OK)   {
+      /* Initialization Error */
+      Error_Handler();
+
+  }
 
   /* Init Device Library */
   USBD_Init(&USBD_Device, &VCP_Desc, 0);
@@ -103,6 +108,7 @@ int main(void)
       for (i = 0x002FFFFF; i--; );
       CDC_Itf_Transmit((uint8_t*)hello,40);
       CDC_Itf_Transmit((uint8_t*)yeah,40);
+      HAL_UART_Transmit(&UartHandle, (uint8_t *)hello, 40, 0xFFFF);
 
   }
 }
@@ -154,7 +160,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2);
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1; // UART2 uses APB1
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
   {
