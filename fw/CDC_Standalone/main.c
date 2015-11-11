@@ -28,7 +28,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "ringbuffer.h"
-
+#include "printf.h"
 
 USBD_HandleTypeDef USBD_Device;
 UART_HandleTypeDef UartHandle;
@@ -50,6 +50,11 @@ void usb_rx_callback(ringbuffer_t* rx_buffer) {
     CDC_Itf_Transmit(test_buffer,i);
     CDC_Itf_Transmit(test_buffer,i);
 }
+
+void blabla( void* p, char ch) {
+  HAL_UART_Transmit(&UartHandle, (uint8_t *)&ch, 1, 0xFFFF);
+}
+
 /**
   * @brief  Main program
   * @param  None
@@ -103,12 +108,14 @@ int main(void)
 
   /* Run Application (Interrupt mode) */
   uint32_t i;
+  init_printf(NULL,blabla);
   while (1)
   {
       for (i = 0x002FFFFF; i--; );
       CDC_Itf_Transmit((uint8_t*)hello,40);
       CDC_Itf_Transmit((uint8_t*)yeah,40);
-      HAL_UART_Transmit(&UartHandle, (uint8_t *)hello, 40, 0xFFFF);
+      printf("\n\r UART Printf Example: retarget the C library printf function to the UART\n\r");
+    //   HAL_UART_Transmit(&UartHandle, (uint8_t *)hello, 40, 0xFFFF);
 
   }
 }
@@ -166,6 +173,7 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+  SystemCoreClockUpdate();
 }
 
 /**

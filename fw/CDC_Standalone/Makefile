@@ -47,6 +47,7 @@ CFLAGS  += -fdata-sections -ffunction-sections
 
 LDSCRIPT = stm32l151.ld
 LDFLAGS = -T$(LDSCRIPT) -mthumb -mcpu=cortex-m3 -nostdlib
+# LDFLAGS = -T$(LDSCRIPT) -mthumb -mcpu=cortex-m3 -Wl,-u,vfprintf
 LDFLAGS += -Wl,--gc-sections -Wl,-Map=$@.map
 
 $(BIN): $(ELF)
