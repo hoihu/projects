@@ -77,7 +77,6 @@ STM_SRC_C = \
 	$(STMHAL_DIR)/printf.c \
 	$(STMHAL_DIR)/pyexec.c \
 	$(STMHAL_DIR)/gccollect.c \
-	$(STMHAL_DIR)/pybstdio.c \
 	$(UPY_ROOT_DIR)/lib/libc/string0.c \
 	$(UPY_ROOT_DIR)/lib/mp-readline/readline.c \
 

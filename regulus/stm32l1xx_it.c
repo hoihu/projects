@@ -34,12 +34,9 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 extern PCD_HandleTypeDef hpcd;
-
-/* UART handler declared in "usbd_cdc_interface.c" file */
 extern UART_HandleTypeDef UartHandle;
 
-/* TIM handler declared in "usbd_cdc_interface.c" file */
-// extern TIM_HandleTypeDef TimHandle;
+extern void __fatal_error(const char*);
 
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
@@ -65,8 +62,8 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* Go to infinite loop when Hard Fault exception occurs */
-  while (1)
-  {
+  while (1)  {
+      __fatal_error("HardFault");
   }
 }
 
@@ -78,8 +75,8 @@ void HardFault_Handler(void)
 void MemManage_Handler(void)
 {
   /* Go to infinite loop when Memory Manage exception occurs */
-  while (1)
-  {
+  while (1)  {
+      __fatal_error("MemManage");
   }
 }
 
@@ -91,8 +88,8 @@ void MemManage_Handler(void)
 void BusFault_Handler(void)
 {
   /* Go to infinite loop when Bus Fault exception occurs */
-  while (1)
-  {
+  while (1)  {
+      __fatal_error("BusFault");
   }
 }
 
@@ -104,8 +101,8 @@ void BusFault_Handler(void)
 void UsageFault_Handler(void)
 {
   /* Go to infinite loop when Usage Fault exception occurs */
-  while (1)
-  {
+  while (1)  {
+      __fatal_error("UsageFault");
   }
 }
 
@@ -143,8 +140,13 @@ void PendSV_Handler(void)
   */
 void SysTick_Handler(void)
 {
-  Toggle_Leds();
-  HAL_IncTick();
+    extern __IO uint32_t uwTick;
+    uwTick += 1;
+
+    // Read the systick control regster. This has the side effect of clearing
+    // the COUNTFLAG bit, which makes the logic in sys_tick_get_microseconds
+    // work properly.
+    SysTick->CTRL;
 }
 
 /******************************************************************************/

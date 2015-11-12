@@ -30,7 +30,7 @@ void usb_vcp_send_strn(const char *str, int len) {
 void usb_vcp_send_strn_cooked(const char *str, int len) {
     while (len--) {
         if (*str == '\n') {
-            ringbuffer_push(&tx_ringbuffer, *(uint8_t*)("\r"));
+            ringbuffer_push(&tx_ringbuffer, *"\r");
             // mp_hal_stdout_tx_strn("\r", 1);
         }
         ringbuffer_push(&tx_ringbuffer, *str++);
@@ -38,6 +38,10 @@ void usb_vcp_send_strn_cooked(const char *str, int len) {
     if (!CDC_is_busy) {
         CDC_send_packet();
     }
+}
+
+void uart_send_strn(const char *str, int len) {
+    HAL_UART_Transmit(&UartHandle, (uint8_t *)str, len, 0xFFFF);
 }
 
 // void usb_vcp_set_interrupt_char(int c) {
@@ -62,9 +66,12 @@ void mp_hal_stdout_tx_str(const char *str) {
 }
 
 void mp_hal_stdout_tx_strn(const char *str, mp_uint_t len) {
+    uart_send_strn(str,len);
     usb_vcp_send_strn(str,len);
+
 }
 
 void mp_hal_stdout_tx_strn_cooked(const char *str, mp_uint_t len) {
+    uart_send_strn(str,len);
     usb_vcp_send_strn_cooked(str, len);
 }

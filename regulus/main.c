@@ -13,9 +13,12 @@
 #include "py/repl.h"
 #include "py/gc.h"
 #include "pyexec.h"
+#include "printf.h"
 #include MICROPY_HAL_H
 
 USBD_HandleTypeDef USBD_Device;
+UART_HandleTypeDef UartHandle;
+
 extern uint8_t* UserRXBuf;
 
 extern uint32_t _heap_start;
@@ -26,25 +29,53 @@ extern uint32_t _heap_end;
 
 void SystemClock_Config(void);
 void callback_usb_rx(uint8_t* Buf, uint32_t *Len) {}
-static char *stack_top;
+// static char *stack_top;
 // static char heap[4096];
+
+
+void blabla( void* p, char ch) {
+  HAL_UART_Transmit(&UartHandle, (uint8_t *)&ch, 1, 0xFFFF);
+}
+void configure_uart(void) {
+	UartHandle.Instance        = USARTx;
+
+    UartHandle.Init.BaudRate   = 115200;
+    UartHandle.Init.WordLength = UART_WORDLENGTH_8B;
+    UartHandle.Init.StopBits   = UART_STOPBITS_1;
+    UartHandle.Init.Parity     = UART_PARITY_NONE;
+    UartHandle.Init.HwFlowCtl  = UART_HWCONTROL_NONE;
+    UartHandle.Init.Mode       = UART_MODE_TX;
+
+    if (HAL_UART_Init(&UartHandle) != HAL_OK)   {
+	}
+}
 
 int main(void) {
 	// uint16_t i;
-	int stack_dummy;
-    stack_top = (char*)&stack_dummy;
+	// int stack_dummy;
+    // stack_top = (char*)&stack_dummy;
 	// #define SCB_CCR_STKALIGN (1 << 9)
     // SCB_CCR |= SCB_CCR_STKALIGN;
-	mp_stack_set_limit((char*)&_ram_end - (char*)&_heap_end - 1024);
+    SCB->CCR |= SCB_CCR_STKALIGN_Msk;
+
+	mp_stack_set_limit(10000);
+	// mp_stack_set_limit((char*)&_ram_end - (char*)&_heap_end - 1024);
 
 	HAL_Init();
 
 	/* Configure the system clock to 32 MHz */
 	SystemClock_Config();
+	configure_uart();
 
+    init_printf(NULL,blabla);
+	printf("HELLO Regulus ;)");
 	// GC init
-	MP_STATE_VM(stack_top) = (char*)&stack_dummy;
-	gc_init(&_heap_start, &_heap_end);
+	// MP_STATE_VM(stack_top) = (char*)&stack_dummy;
+    #if MICROPY_ENABLE_GC
+    gc_init(&_heap_start, &_heap_end);
+    #endif
+
+
 	mp_init();
 	// GC init
 
@@ -128,27 +159,23 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+  SystemCoreClockUpdate();
 }
 
-/**
-  * @brief  Toggles LEDs to shows user input state.
-  * @param  None
-  * @retval None
-  */
-void Toggle_Leds(void)
-{
-  static uint32_t ticks;
-
-  if(ticks++ == 100)
-  {
-    // BSP_LED_Toggle(LED1);
-    // BSP_LED_Toggle(LED2);
-    // BSP_LED_Toggle(LED3);
-    // BSP_LED_Toggle(LED4);
-    ticks = 0;
-  }
+void NORETURN __fatal_error(const char *msg) {
+    for (volatile uint delay = 0; delay < 10000000; delay++) {
+    }
+    mp_hal_stdout_tx_strn("\nFATAL ERROR:\n", 14);
+    mp_hal_stdout_tx_strn(msg, strlen(msg));
+    for (uint i = 0;;) {
+        for (volatile uint delay = 0; delay < 10000000; delay++) {
+        }
+        if (i >= 16) {
+            // to conserve power
+            __WFI();
+        }
+    }
 }
-
 
 /**
   * @brief  This function is executed in case of error occurrence.
