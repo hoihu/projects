@@ -43,6 +43,7 @@ bool ringbuffer_is_empty(ringbuffer_t* rbuffer) {
 uint16_t ringbuffer_available_space(ringbuffer_t* rbuffer) {
     if (rbuffer->push_ptr > rbuffer->pop_ptr) {
         return rbuffer->sizeof_data - (rbuffer->push_ptr - rbuffer->pop_ptr);
+    }
     else 
         return rbuffer->pop_ptr - rbuffer->push_ptr;
 }
