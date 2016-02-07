@@ -1,0 +1,22 @@
+Part    Value      Package           Description
+C1      100u       C2220K                                                                    
+C2      1u         C0603                                                                     
+C3      10n        C0603                                                                     
+R1      1M         R0603                                                                     
+R2      270        R0603                                                                     
+R4      3k9        R0603                                                                     
+R5      3k9        R0603                                                                     
+IC1     24C01SN    SO-08             Serial EEPROM                  CAT24C01WI-GT3 1718117    06R0487              
+Q1      BSS138     SOT23             Common NMOSFET Parts           Mouser: 771-PMV20ENR Trenchfet
+SW1,SW2            PUSHBUTTON_SMD_SJ Buttons                        Mouser: 688-SKPMAN                                                                      
+JP1                1X01              Pin header 1x1 for 0.1" spacing                                                   
+JP2,JP3,JP4        1X02              Jumper/Header                                                                            
+JP5,JP6,JP7,JP8    1X02              Jumper/Header                                                                            
+X2,X10,X11         1X03              PIN HEADER                                                                        
+X3                 1X08-CLEANBIG     PIN HEADER                                                                        
+X4                 1X08-CLEANBIG     PIN HEADER                                                                        
+X5      PINHD-1X10 1X10-BIG          Pin header 1x10 0.1" spacing                                                      
+X6                 1X08-CLEANBIG     PIN HEADER                                                                        
+X7                 1X08-CLEANBIG     PIN HEADER                                                                        
+X8                 1X06-BIG          PIN HEADER                                                                        
+X9      HAT-Conn   2X20              PIN HEADER                                                                        
