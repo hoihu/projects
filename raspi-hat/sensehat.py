@@ -83,7 +83,7 @@ class uSenseHAT:
         if refresh:
             self.refresh()
          
-    # -.-.-.-.-.-.-.-.-.-.- LPS functions (pressure & temperature)
+    # -.-.-.-.-.-.-.-.-.-.- LPS25 functions (pressure & temperature)
     def lps_id(self):
         return self.i2c.mem_read(1,I2C_ADDR_TEMP_PRESSURE,LPS_WHO_AM_I)
         
@@ -97,21 +97,15 @@ class uSenseHAT:
         
     def get_pressure(self):
         """ reads the pressure data and converts it to hPa"""
-        data =  int.from_bytes(
-            self.i2c.mem_read(1,I2C_ADDR_TEMP_PRESSURE,LPS_PRESSURE_OUT) + \
-            self.i2c.mem_read(1,I2C_ADDR_TEMP_PRESSURE,LPS_PRESSURE_OUT+1) + \
-            self.i2c.mem_read(1,I2C_ADDR_TEMP_PRESSURE,LPS_PRESSURE_OUT+2)
-        )
+        data =  int.from_bytes(self.i2c.mem_read(3,I2C_ADDR_TEMP_PRESSURE,LPS_PRESSURE_OUT | 0x80))
         if data & 0x80000000:
             data = data - 0xffffffff
         return float("{0:.2f}".format(data /4096.))
         
     def get_temp(self):
         """ reads the temperature data and returns degrees celsius"""
-        data = int.from_bytes(
-            self.i2c.mem_read(1,I2C_ADDR_TEMP_PRESSURE,LPS_TEMP_OUT) + \
-            self.i2c.mem_read(1,I2C_ADDR_TEMP_PRESSURE,LPS_TEMP_OUT+1)
-        )
+        # using MSB for multi-read support
+        data = int.from_bytes(self.i2c.mem_read(2,I2C_ADDR_TEMP_PRESSURE,LPS_TEMP_OUT | 0x80))
         if data & 0x8000:
             data = data - 0xffff
         return float("{0:.2f}".format(42.5 + data/480.))
