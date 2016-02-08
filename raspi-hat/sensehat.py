@@ -30,11 +30,20 @@ KEY_TOP = const(0x4)
 KEY_BOTTOM = const(0x1)
 KEY_PRESS = const(0x8)
 
-#avail registers for LPS25H (humidity/temp)
+# registers for LPS25H (pressure/temp)
 LPS_WHO_AM_I    = const(0xf)
 LPS_REF_P       = const(8)
 LPS_PRESSURE_OUT = const(0x28)
 LPS_TEMP_OUT = const(0x2b)
+
+#registers for HTS221 (humidity/temp)
+HTS_HUMID_OUT = const(0x28)
+HTS_TEMP_OUT = const(0x2a)
+
+HTS_CAL_H0x2 = const(0x30)
+HTS_CAL_H1x2 = const(0x31)
+HTS_CAL_H0T0 = const(0x36)
+HTS_CAL_H1T0 = const(0x3a)
 
 # gamma table is taken from linux driver and limited to 31
 # which is apparently set by the HW :/
@@ -61,12 +70,14 @@ class uSenseHAT:
     def __init__(self, i2c):
         self.i2c = i2c
         self.lps_init()
+        self.hts_init()
         self.vmem = array.array('B',[0 for  i in range(0,192)])
         
     def get_version(self):
         version = array.array('B',[0])
         self.i2c.mem_read(version, I2C_ADDR_MATRIX, RPISENSE_VER)
         print("HAT v.{}".format(version))
+        
         
     def get_key(self):
         return self.i2c.mem_read(1, I2C_ADDR_MATRIX, RPISENSE_KEYS)
@@ -83,7 +94,7 @@ class uSenseHAT:
         if refresh:
             self.refresh()
          
-    # -.-.-.-.-.-.-.-.-.-.- LPS25 functions (pressure & temperature)
+    # -.-.-.-.-.-.-.-.-.-.- LPS25 functions (pressure & temperature) -.-.-.-.-.-.-.-.-.-.- 
     def lps_id(self):
         return self.i2c.mem_read(1,I2C_ADDR_TEMP_PRESSURE,LPS_WHO_AM_I)
         
@@ -105,15 +116,35 @@ class uSenseHAT:
     def get_temp(self):
         """ reads the temperature data and returns degrees celsius"""
         # using MSB for multi-read support
-        data = int.from_bytes(self.i2c.mem_read(2,I2C_ADDR_TEMP_PRESSURE,LPS_TEMP_OUT | 0x80))
-        if data & 0x8000:
-            data = data - 0xffff
+        data = self._get_signed(int.from_bytes(self.i2c.mem_read(2,I2C_ADDR_TEMP_PRESSURE,LPS_TEMP_OUT | 0x80)))
         return float("{0:.2f}".format(42.5 + data/480.))
         
     def refresh(self):
         """ refresh matrix data """
         self.i2c.mem_write(self.vmem,I2C_ADDR_MATRIX,0)
     
+    # -.-.-.-.-.-.-.-.-.-.- HTS221 functions (humidity & temperature) -.-.-.-.-.-.-.-.-.-.- 
+            
+    def hts_init(self):
+        # read humidity calibraiton values
+        self.i2c.mem_write(0x81,I2C_ADDR_HUMID_TEMP,0x20)
+        self.hts_cal_H0rh = int.from_bytes(self.i2c.mem_read(1,I2C_ADDR_HUMID_TEMP,HTS_CAL_H0x2)) / 2
+        self.hts_cal_H1rh = int.from_bytes(self.i2c.mem_read(1,I2C_ADDR_HUMID_TEMP,HTS_CAL_H1x2)) / 2
+        self.hts_cal_H0T0_OUT = self._get_signed(int.from_bytes(self.i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_CAL_H0T0 | 0x80)))
+        self.hts_cal_H1T0_OUT = self._get_signed(int.from_bytes(self.i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_CAL_H1T0 | 0x80)))
+                    
+    def read_humidity(self):
+        self.hts_H_OUT = self._get_signed(int.from_bytes(self.i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_HUMID_OUT | 0x80)))
+        humidity = self.hts_cal_H0rh + ((self.hts_cal_H1rh - self.hts_cal_H0rh )*(self.hts_H_OUT - self.hts_cal_H0T0_OUT)) / \
+                    (self.hts_cal_H1T0_OUT - self.hts_cal_H0T0_OUT)
+        return humidity
+    
+    def _get_signed(self,value):
+        """ helper to check/return signed integer without using struct package """
+        if value & 0x8000:
+            return value - 0xffff
+        return value
+        
 sense = uSenseHAT(I2C(1, I2C.MASTER))
         
 def test():
