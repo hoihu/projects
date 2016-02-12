@@ -1,6 +1,7 @@
 from pyb import I2C
 import pyb
 import array
+from profile import *
 
 # settings of I2C slaves of SenseHAT:
 # Pressure/Temp: LPS25H -> 0x5c
@@ -73,9 +74,12 @@ class ColorPixel:
 class uSenseHAT:    
     def __init__(self, i2c):
         self.i2c = i2c
+        self.temp_cal = array.array("h",[0,0,0,0,0])
+        self.vmem = array.array('B',[0 for  i in range(0,192)])
+        
         self.lps_init()
         self.hts_init()
-        self.vmem = array.array('B',[0 for  i in range(0,192)])
+        
         
     def get_version(self):
         version = array.array('B',[0])
@@ -105,6 +109,7 @@ class uSenseHAT:
     def lps_id(self):
         return self.i2c.mem_read(1,I2C_ADDR_TEMP_PRESSURE,LPS_WHO_AM_I)
         
+    @timed_function
     def lps_init(self):
         """ initialisation code for the LPS chip """
         # recommended init as of AN4450, 1Hz interval, 4uA
@@ -127,36 +132,51 @@ class uSenseHAT:
         return float("{0:.2f}".format(42.5 + data/480.))
     
     # -.-.-.-.-.-.-.-.-.-.- HTS221 functions (humidity & temperature) -.-.-.-.-.-.-.-.-.-.- 
-            
+    
+    @timed_function
     def hts_init(self):
         # read humidity calibration values
-        self.i2c.mem_write(0x81,I2C_ADDR_HUMID_TEMP,0x20)
-        self.hts_cal_H0rh = int.from_bytes(self.i2c.mem_read(1,I2C_ADDR_HUMID_TEMP,HTS_CAL_H0x2)) >> 1
-        self.hts_cal_H1rh = int.from_bytes(self.i2c.mem_read(1,I2C_ADDR_HUMID_TEMP,HTS_CAL_H1x2)) >> 1
-        self.hts_cal_H0T0_OUT = self._get_signed(int.from_bytes(self.i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_CAL_H0T0 | 0x80)))
-        self.hts_cal_H1T0_OUT = self._get_signed(int.from_bytes(self.i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_CAL_H1T0 | 0x80)))
+        i2c = self.i2c
+        i2c.mem_write(0x81,I2C_ADDR_HUMID_TEMP,0x20)
+        self.hts_cal_H0rh = int.from_bytes(i2c.mem_read(1,I2C_ADDR_HUMID_TEMP,HTS_CAL_H0x2)) >> 1
+        self.hts_cal_H1rh = int.from_bytes(i2c.mem_read(1,I2C_ADDR_HUMID_TEMP,HTS_CAL_H1x2)) >> 1
+        self.hts_cal_H0T0_OUT = self._get_signed(int.from_bytes(i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_CAL_H0T0 | 0x80)))
+        self.hts_cal_H1T0_OUT = self._get_signed(int.from_bytes(i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_CAL_H1T0 | 0x80)))
     
-        # read temperature calibration values
-        self.hts_cal_T0degc = int.from_bytes(self.i2c.mem_read(1,I2C_ADDR_HUMID_TEMP,HTS_CAL_T0DEGx8)) 
-        self.hts_cal_T1degc = int.from_bytes(self.i2c.mem_read(1,I2C_ADDR_HUMID_TEMP,HTS_CAL_T1DEGx8)) 
-        msbs = int.from_bytes(self.i2c.mem_read(1,I2C_ADDR_HUMID_TEMP, 0x35))
-        self.hts_cal_T0degc |= (msbs & 0x3) << 8;
-        self.hts_cal_T0degc = self.hts_cal_T0degc >> 3
-        self.hts_cal_T1degc |= (msbs & 0xc) << 6;
-        self.hts_cal_T1degc = self.hts_cal_T1degc >> 3
-        self.hts_cal_T0_OUT = self._get_signed(int.from_bytes(self.i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_CAL_T0 | 0x80)))
-        self.hts_cal_T1_OUT = self._get_signed(int.from_bytes(self.i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_CAL_T1 | 0x80)))
+        # read temperature calibration values        
+        # were treating everything as signed here as the "degcx8" values are limited to 10bits
+        mv_temp = memoryview(self.temp_cal)        
+        mv_temp[0] = int.from_bytes(i2c.mem_read(1,I2C_ADDR_HUMID_TEMP,HTS_CAL_T0DEGx8))
+        mv_temp[1] = int.from_bytes(i2c.mem_read(1,I2C_ADDR_HUMID_TEMP,HTS_CAL_T1DEGx8))
+        mv_temp[2] = int.from_bytes(i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_CAL_T0 | 0x80))
+        mv_temp[3] = int.from_bytes(i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_CAL_T1 | 0x80))
+        msbs = int.from_bytes(i2c.mem_read(1,I2C_ADDR_HUMID_TEMP, 0x35))
+        
+        mv_temp[0] = (mv_temp[0] | ((msbs & 0x3) << 8)) >> 3
+        mv_temp[1] = (mv_temp[1] | ((msbs & 0xc) << 6)) >> 3
+        
+        # self.hts_cal_T0degc = int.from_bytes(i2c.mem_read(1,I2C_ADDR_HUMID_TEMP,HTS_CAL_T0DEGx8)) 
+        # self.hts_cal_T1degc = int.from_bytes(i2c.mem_read(1,I2C_ADDR_HUMID_TEMP,HTS_CAL_T1DEGx8)) 
+        # msbs = int.from_bytes(i2c.mem_read(1,I2C_ADDR_HUMID_TEMP, 0x35))
+        # self.hts_cal_T0degc |= (msbs & 0x3) << 8;
+        # self.hts_cal_T0degc = self.hts_cal_T0degc >> 3
+        # self.hts_cal_T1degc |= (msbs & 0xc) << 6;
+        # self.hts_cal_T1degc = self.hts_cal_T1degc >> 3
+        # self.hts_cal_T0_OUT = self._get_signed(int.from_bytes(i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_CAL_T0 | 0x80)))
+        # self.hts_cal_T1_OUT = self._get_signed(int.from_bytes(i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_CAL_T1 | 0x80)))
     
     def read_humidity(self):
         self.hts_H_OUT = self._get_signed(int.from_bytes(self.i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_HUMID_OUT | 0x80)))
         humidity = self.hts_cal_H0rh + ((self.hts_cal_H1rh - self.hts_cal_H0rh )*(self.hts_H_OUT - self.hts_cal_H0T0_OUT)) / \
                     (self.hts_cal_H1T0_OUT - self.hts_cal_H0T0_OUT)
         return humidity
-    
+        
+    @timed_function
     def read_temp_hts(self):
-        self.hts_T_OUT = self._get_signed(int.from_bytes(self.i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_TEMP_OUT | 0x80)))
-        temperature = self.hts_cal_T0degc + ((self.hts_cal_T1degc - self.hts_cal_T0degc )*(self.hts_T_OUT - self.hts_cal_T0_OUT)) / \
-                    (self.hts_cal_T1_OUT - self.hts_cal_T0_OUT)
+        mv_temp = memoryview(self.temp_cal)    
+        mv_temp[4] = int.from_bytes(self.i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_TEMP_OUT | 0x80))
+        temperature = mv_temp[0] + ((mv_temp[1] - mv_temp[0]) * (mv_temp[4] - mv_temp[2])) / \
+                    (mv_temp[3] - mv_temp[2])
         return temperature
     
     def _get_signed(self,value):
