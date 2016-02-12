@@ -97,7 +97,7 @@ place the jumper as follows:
 ## How to use it
 I've written [example uPy code](ideeprom.py) that should run on most HAT's. It reads out the ID EEPROM of the HAT (connected on I2C1) and interprets the data (vendor,product serial etc). I tested it with the SenseHat and it works ok.
 
-I also added basic support for the [SenseHAT](https://www.raspberrypi.org/products/sense-hat/) (LED matrix, joystick, temperature and pressure readout) [here](sensehat.py).
+I also added basic support for the [SenseHAT](https://www.raspberrypi.org/products/sense-hat/) (LED matrix, joystick, temperature (both of pressure and humidity sensor),pressure and humidity readout) [here](sensehat.py).
 
 Example usage (on serial REPL)
 ```python
@@ -108,9 +108,11 @@ Type "help()" for more information.
 23.41
 >>> s.sense.get_pressure()
 966.57
+>>> s.sense.read_humidity()
+56.16295
 >>> s.sense.clear()     # clears the LED matrix
->>> s.sense.get_key()   # joystick pressed right
-b'\x02'
+>>> s.sense.get_key()
+'LEFT'
 >>> 
 ```
 
