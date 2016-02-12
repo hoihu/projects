@@ -38,12 +38,16 @@ LPS_TEMP_OUT = const(0x2b)
 
 #registers for HTS221 (humidity/temp)
 HTS_HUMID_OUT = const(0x28)
-HTS_TEMP_OUT = const(0x2a)
-
 HTS_CAL_H0x2 = const(0x30)
 HTS_CAL_H1x2 = const(0x31)
 HTS_CAL_H0T0 = const(0x36)
 HTS_CAL_H1T0 = const(0x3a)
+
+HTS_TEMP_OUT = const(0x2a)
+HTS_CAL_T0DEGx8 = const(0x32)
+HTS_CAL_T1DEGx8 = const(0x33)
+HTS_CAL_T0 = const(0x3c)
+HTS_CAL_T1 = const(0x3e)
 
 # gamma table is taken from linux driver and limited to 31
 # which is apparently set by the HW :/
@@ -78,7 +82,6 @@ class uSenseHAT:
         self.i2c.mem_read(version, I2C_ADDR_MATRIX, RPISENSE_VER)
         print("HAT v.{}".format(version))
         
-        
     def get_key(self):
         return self.i2c.mem_read(1, I2C_ADDR_MATRIX, RPISENSE_KEYS)
         
@@ -94,6 +97,10 @@ class uSenseHAT:
         if refresh:
             self.refresh()
          
+    def refresh(self):
+        """ refresh matrix data """
+        self.i2c.mem_write(self.vmem,I2C_ADDR_MATRIX,0)
+            
     # -.-.-.-.-.-.-.-.-.-.- LPS25 functions (pressure & temperature) -.-.-.-.-.-.-.-.-.-.- 
     def lps_id(self):
         return self.i2c.mem_read(1,I2C_ADDR_TEMP_PRESSURE,LPS_WHO_AM_I)
@@ -118,26 +125,39 @@ class uSenseHAT:
         # using MSB for multi-read support
         data = self._get_signed(int.from_bytes(self.i2c.mem_read(2,I2C_ADDR_TEMP_PRESSURE,LPS_TEMP_OUT | 0x80)))
         return float("{0:.2f}".format(42.5 + data/480.))
-        
-    def refresh(self):
-        """ refresh matrix data """
-        self.i2c.mem_write(self.vmem,I2C_ADDR_MATRIX,0)
     
     # -.-.-.-.-.-.-.-.-.-.- HTS221 functions (humidity & temperature) -.-.-.-.-.-.-.-.-.-.- 
             
     def hts_init(self):
-        # read humidity calibraiton values
+        # read humidity calibration values
         self.i2c.mem_write(0x81,I2C_ADDR_HUMID_TEMP,0x20)
-        self.hts_cal_H0rh = int.from_bytes(self.i2c.mem_read(1,I2C_ADDR_HUMID_TEMP,HTS_CAL_H0x2)) / 2
-        self.hts_cal_H1rh = int.from_bytes(self.i2c.mem_read(1,I2C_ADDR_HUMID_TEMP,HTS_CAL_H1x2)) / 2
+        self.hts_cal_H0rh = int.from_bytes(self.i2c.mem_read(1,I2C_ADDR_HUMID_TEMP,HTS_CAL_H0x2)) >> 1
+        self.hts_cal_H1rh = int.from_bytes(self.i2c.mem_read(1,I2C_ADDR_HUMID_TEMP,HTS_CAL_H1x2)) >> 1
         self.hts_cal_H0T0_OUT = self._get_signed(int.from_bytes(self.i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_CAL_H0T0 | 0x80)))
         self.hts_cal_H1T0_OUT = self._get_signed(int.from_bytes(self.i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_CAL_H1T0 | 0x80)))
-                    
+    
+        # read temperature calibration values
+        self.hts_cal_T0degc = int.from_bytes(self.i2c.mem_read(1,I2C_ADDR_HUMID_TEMP,HTS_CAL_T0DEGx8)) 
+        self.hts_cal_T1degc = int.from_bytes(self.i2c.mem_read(1,I2C_ADDR_HUMID_TEMP,HTS_CAL_T1DEGx8)) 
+        msbs = int.from_bytes(self.i2c.mem_read(1,I2C_ADDR_HUMID_TEMP, 0x35))
+        self.hts_cal_T0degc |= (msbs & 0x3) << 8;
+        self.hts_cal_T0degc = self.hts_cal_T0degc >> 3
+        self.hts_cal_T1degc |= (msbs & 0xc) << 6;
+        self.hts_cal_T1degc = self.hts_cal_T1degc >> 3
+        self.hts_cal_T0_OUT = self._get_signed(int.from_bytes(self.i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_CAL_T0 | 0x80)))
+        self.hts_cal_T1_OUT = self._get_signed(int.from_bytes(self.i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_CAL_T1 | 0x80)))
+    
     def read_humidity(self):
         self.hts_H_OUT = self._get_signed(int.from_bytes(self.i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_HUMID_OUT | 0x80)))
         humidity = self.hts_cal_H0rh + ((self.hts_cal_H1rh - self.hts_cal_H0rh )*(self.hts_H_OUT - self.hts_cal_H0T0_OUT)) / \
                     (self.hts_cal_H1T0_OUT - self.hts_cal_H0T0_OUT)
         return humidity
+    
+    def read_temp_hts(self):
+        self.hts_T_OUT = self._get_signed(int.from_bytes(self.i2c.mem_read(2,I2C_ADDR_HUMID_TEMP,HTS_TEMP_OUT | 0x80)))
+        temperature = self.hts_cal_T0degc + ((self.hts_cal_T1degc - self.hts_cal_T0degc )*(self.hts_T_OUT - self.hts_cal_T0_OUT)) / \
+                    (self.hts_cal_T1_OUT - self.hts_cal_T0_OUT)
+        return temperature
     
     def _get_signed(self,value):
         """ helper to check/return signed integer without using struct package """
