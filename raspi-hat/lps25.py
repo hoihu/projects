@@ -1,9 +1,10 @@
 """
-LPS25 - I2C pressure and temperature sensor driver for MicroPython
+LPS25 - ST MEMS I2C pressure and temperature sensor driver for MicroPython
 
+http://www.st.com/web/en/resource/technical/document/datasheet/DM00066332.pdf
 see AN4450 application note for additional details of implementation
 
-Is part of the SenseHAT board.
+Is part of the SenseHAT board
 
 Example usage:
 >>> from pyb import I2C

@@ -1,6 +1,17 @@
+"""
+SenseHAT support for MicroPython
+
+Connect one of the two I2C busses to the SenseHAT board and 
+use this class to access humidity, pressure, temperature, led matrix
+and joystick values
+
+Example usage:
+"""
+
 from pyb import I2C
 import pyb
 import array
+from profile import *
 from hts21 import HTS21
 from lps25 import LPS25
 
@@ -13,6 +24,7 @@ from lps25 import LPS25
 I2C_ADDR_MATRIX = const(0x46)
 I2C_ADDR_TEMP_PRESSURE = const(0x5c)
 I2C_ADDR_HUMID_TEMP = const(0x5f)
+# XXX not yet supported is gyro - missing driver
 I2C_IMU = const(0x1c)
 I2C_IMU2 = const(0x6a)
 
@@ -27,8 +39,8 @@ RPISENSE_ID    = 's'
 # joystick values from register RPISENSE_KEYS
 KEY_LEFT = const(0x10)
 KEY_RIGHT = const(0x2)
-KEY_TOP = const(0x4)
-KEY_BOTTOM = const(0x1)
+KEY_UP = const(0x4)
+KEY_DOWN = const(0x1)
 KEY_PRESS = const(0x8)
 
 # gamma table is taken from linux driver and limited to 31
@@ -52,6 +64,7 @@ class uSenseHAT:
         # xxx gyro not yet supported
         # buffer for LED data
         self.vmem = array.array('B',[0 for  i in range(0,192)])
+        self.vmem_mv = memoryview(self.vmem)
         
     def read_key(self):
         """ 
@@ -65,6 +78,62 @@ class uSenseHAT:
         self.vmem = array.array('B',[0 for  i in range(0,192)])
         self.refresh()
         
+    def scroll_vertical(self, dir = 'up'):
+        """ scrolls matrix vertically (up or down), ca. 1.5msec """
+        vmem = self.vmem_mv
+        if dir == 'up':
+            for x in range(8):
+                for y in range(0,7):
+                    newpos = 24*y+x
+                    oldpos = 24*(y+1)+x
+                    vmem[newpos] = vmem[oldpos]
+                    vmem[newpos+8] = vmem[oldpos+8]
+                    vmem[newpos+16] = vmem[oldpos+16]
+            for x in range(8): 
+                vmem[168+x] = 0
+                vmem[176+x] = 0
+                vmem[184+x] = 0
+                
+        elif dir == 'down': 
+            for x in range(8):
+                for y in range(7,0,-1):
+                    newpos = 24*y+x
+                    oldpos = 24*(y-1)+x
+                    vmem[newpos] = vmem[oldpos]
+                    vmem[newpos+8] = vmem[oldpos+8]
+                    vmem[newpos+16] = vmem[oldpos+16]
+            for x in range(8):
+                vmem[x] = 0
+                vmem[x+8] = 0
+                vmem[x+16] = 0
+                
+        elif dir == 'left':
+            for y in range(8):
+                for x in range(0,7):
+                    newpos = 24*y+x
+                    oldpos = 24*y+x+1
+                    vmem[newpos] = vmem[oldpos]
+                    vmem[newpos+8] = vmem[oldpos+8]
+                    vmem[newpos+16] = vmem[oldpos+16]
+            for y in range(8): 
+                vmem[24*y+7] = 0
+                vmem[24*y+15] = 0
+                vmem[24*y+23] = 0    
+        
+        elif dir == 'right':
+            for y in range(8):
+                for x in range(7,0,-1):
+                    newpos = 24*y+x
+                    oldpos = 24*y+x-1
+                    vmem[newpos] = vmem[oldpos]
+                    vmem[newpos+8] = vmem[oldpos+8]
+                    vmem[newpos+16] = vmem[oldpos+16]
+            for y in range(8): 
+                vmem[24*y] = 0
+                vmem[24*y+8] = 0
+                vmem[24*y+16] = 0    
+                
+        
     def set_pixel(self, x, y, color, refresh=False):
         """ 
         sets one pixel in video buffer, using gamma correction
@@ -77,7 +146,7 @@ class uSenseHAT:
         if refresh: self.refresh()
 
     def refresh(self):
-        """ refresh matrix data """
+        """ refresh matrix data, takes ca.5msec  """
         self.i2c.mem_write(self.vmem,I2C_ADDR_MATRIX,0)
 
     # convenience methods to ease access to sensors
@@ -94,14 +163,30 @@ class uSenseHAT:
 s = uSenseHAT(I2C(1, I2C.MASTER))
         
 def test():
-    start = 1
-    while (1):
-        for x in range(8):
-            for y in range(8):
-                s.set_pixel(x,y,[(x + start) & 0xf,(y+start*2) & 0xf,0])
-        s.refresh()
-        start +=1
-        start = start & 0xff
-        pyb.delay(100)
-        
-        
+    scroll_dir = 'up'
+    while (1):    
+        for i in range(16):
+            pyb.delay(20)
+            line = []
+            s.scroll_vertical(dir=scroll_dir)
+            if i>7:
+                i=15-i
+            if scroll_dir == 'up':
+                s.set_pixel(i,7,[0,i*2+3,8])
+            elif scroll_dir == 'down':
+                s.set_pixel(i,0,[12,i*2+3,0])
+            elif scroll_dir == 'left':
+                s.set_pixel(7,i,[12,i*2+3,0])
+            elif scroll_dir == 'right':
+                s.set_pixel(0,i,[0,i*2+3,8])
+                            
+            s.refresh()
+            if s.read_key() == KEY_UP:
+                scroll_dir = 'up'
+            elif s.read_key() == KEY_DOWN:
+                scroll_dir = 'down'
+            elif s.read_key() == KEY_LEFT:
+                scroll_dir = 'left'
+            elif s.read_key() == KEY_RIGHT:
+                scroll_dir = 'right'
+                            
