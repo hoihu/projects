@@ -1,12 +1,11 @@
 """
-HTS21 - I2C temperature and humidity sensor driver for MicroPython
-Part of SenseHAT board for the raspberry pi
+HTS21 - STMicro I2C temperature and humidity sensor driver for MicroPython
 
 Example usage:
 >>> from pyb import I2C
 >>> from hts21 import HTS21
 >>> hts = HTS21(I2C(1, I2C.MASTER), 0x5f)
->>> hts.read_temperature()
+>>> hts.read_temp()
 22.06582
 >>> hts.read_humidity()
 57.44328
@@ -38,8 +37,8 @@ class HTS21:
         # see TN1218 appnote for details
         # read humidity calibration values
         # using memoryview here to optimize RAM usage, using i2c as shortcut
-        # speed is limited by I2c bus: 2Bytes memread = ca.120usec @ 400kHz
-        # and 37usec between the memread calls = ca.1.4msec total for init
+        # timing: 2 Bytes memread = ca.120usec @ 400kHz
+        #         37usec between the memread calls => ca.1.4msec total for init
         i2c = self.i2c
         adr = self.address
         mv = memoryview(self.hts_calib)
