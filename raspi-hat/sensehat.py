@@ -139,9 +139,9 @@ class uSenseHAT:
     def hts_init(self):
         # see TN1218 appnote for details
         # read humidity calibration values
-        # using memoryview here to optimize RAM usage, using i2c as shortcut also helps
-        # although - speed is limited by I2c bus anyway. 2Bytes memread = ca.120usec
-        # and 37usec between the memread calls
+        # using memoryview here to optimize RAM usage, using i2c as shortcut
+        # speed is limited by I2c bus: 2Bytes memread = ca.120usec
+        # and 37usec between the memread calls = ca.1.4msec
         i2c = self.i2c
         mv = memoryview(self.hts_calib)    
         # init measurement mode, enable
