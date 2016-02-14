@@ -49,9 +49,9 @@ KEY_PRESS = const(0x8)
 # XXX some values are suspicious (e.g. 0x12 -> 0x14 -> 0x15)
 #     that it's not logarithmic...
 GAMMA_TABLE = array.array('B', [
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 
- 	0x02, 0x02, 0x03, 0x03, 0x04, 0x05, 0x06, 0x07, 
- 	0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0E, 0x0F, 0x11, 
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 
+ 	0x02, 0x02, 0x03, 0x03, 0x04, 0x04, 0x05, 0x06, 
+ 	0x07, 0x08, 0x0A, 0x0B, 0x0C, 0x0E, 0x0F, 0x11, 
  	0x12, 0x14, 0x15, 0x17, 0x19, 0x1B, 0x1D, 0x1F]
 )
 
@@ -167,18 +167,17 @@ def test():
     while (1):    
         for i in range(16):
             pyb.delay(20)
-            line = []
             s.scroll_vertical(dir=scroll_dir)
             if i>7:
                 i=15-i
             if scroll_dir == 'up':
-                s.set_pixel(i,7,[0,i*2+3,8])
+                s.set_pixel(i,7,[3,i*2+3,12])
             elif scroll_dir == 'down':
                 s.set_pixel(i,0,[12,i*2+3,0])
             elif scroll_dir == 'left':
-                s.set_pixel(7,i,[12,i*2+3,0])
+                s.set_pixel(7,i,[15,i*2+3,0])
             elif scroll_dir == 'right':
-                s.set_pixel(0,i,[0,i*2+3,8])
+                s.set_pixel(0,i,[3,i*2+3,8])
                             
             s.refresh()
             if s.read_key() == KEY_UP:
