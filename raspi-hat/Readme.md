@@ -101,20 +101,27 @@ I also added basic support for the [SenseHAT](https://www.raspberrypi.org/produc
 
 Example usage (on serial REPL)
 ```python
-MicroPython v1.5.1-303-gff1a96c on 2016-02-05; PYBv1.0 with STM32F405RG
-Type "help()" for more information.
->>> import sensehat as s
->>> s.sense.get_temp()
-23.41
->>> s.sense.get_pressure()
-966.57
->>> s.sense.read_humidity()
-56.16295
->>> s.sense.clear()     # clears the LED matrix
->>> s.sense.get_key()
-'LEFT'
->>> 
+>>> from pyb import I2C
+>>> from sensehat import uSenseHAT
+>>> s=uSenseHAT(I2C(1,I2C.MASTER))
+>>> s.read_temps()  # reads temperature values from pressure and humidity sensor
+(21.92405, 21.86458)
+>>> s.read_pressure()
+954.0762
+>>> s.read_humidity()
+62.93954
+>>> s.read_key()    # no key
+0
+>>> s.read_key()    # left key
+16
+>>> s.read_key()    # right key
+2
+>>> s.read_key()    # pressed
+8
+>>> s.write("SenseHAT on MicroPython!")  # scrolling message on LED dispaly
 ```
+
+Text scrolling is also supported. You can use `s.write("HELLO WORLD")` to see a left scrolling message.
 
 It would be nice to use the TFT HAT's but that's probably a bigger challenge and might needs c-level framebuffer support which is apparently in development.
 

@@ -22,14 +22,14 @@ import font8x8vmsb as f
 # LED Matrix/Keys: ATTINY88 -> 0x46
 # IMU (Gyroscope, Accelerometer, Magnetometer) -> 0x1c,0x6a
 
-I2C_ADDR_MATRIX = const(0x46)
-I2C_ADDR_TEMP_PRESSURE = const(0x5c)
-I2C_ADDR_HUMID_TEMP = const(0x5f)
-# XXX not yet supported is gyro - missing driver
-I2C_IMU = const(0x1c)
-I2C_IMU2 = const(0x6a)
-
 class uSenseHAT:    
+    I2C_ADDR_MATRIX = const(0x46)
+    I2C_ADDR_TEMP_PRESSURE = const(0x5c)
+    I2C_ADDR_HUMID_TEMP = const(0x5f)
+    # XXX not yet supported is gyro - missing driver
+    I2C_IMU = const(0x1c)
+    I2C_IMU2 = const(0x6a)
+    
     def __init__(self, i2c):
         self.i2c = i2c
         # init board sensors
@@ -39,6 +39,9 @@ class uSenseHAT:
         # xxx gyro not yet supported
 
     # convenience methods to ease access to sensors
+    def read_key(self):
+        return self.matrix.read_key()
+        
     def read_pressure(self):
         return self.lps.read_pressure()
     
@@ -79,46 +82,3 @@ class uSenseHAT:
             self.putc_scroll(c)
             
                 
-def test(s):
-    scroll_dir = 'up'
-    akt_char = 0
-    while (1):    
-        s.write("HELLO WORLD!!")
-        # s.putc(akt_char)
-        # s.matrix.refresh()
-        # pyb.delay(200)
-        # while (not s.matrix.read_key()):
-        #     pyb.delay(20)
-        # for i in range(8):
-        #     s.matrix.scroll(dir='left')
-        #     s.matrix.refresh()
-        #     pyb.delay(20)
-        # akt_char += 1
-        # if akt_char > 117: 
-        #     akt_char = 0
-        # for i in range(16):
-        #     pyb.delay(20)
-        #     if s.matrix.read_key() == s.matrix.KEY_UP:
-        #         scroll_dir = 'up'
-        #     elif s.matrix.read_key() == s.matrix.KEY_DOWN:
-        #         scroll_dir = 'down'
-        #     elif s.matrix.read_key() == s.matrix.KEY_LEFT:
-        #         scroll_dir = 'left'
-        #     elif s.matrix.read_key() == s.matrix.KEY_RIGHT:
-        #         scroll_dir = 'right'
-        #     s.matrix.scroll(dir=scroll_dir)
-        #     if i>7:
-        #         i=15-i
-        #     if scroll_dir == 'up':
-        #         s.matrix.set_pixel(i,7,[3,i*2+3,12])
-        #     elif scroll_dir == 'down':
-        #         s.matrix.set_pixel(i,0,[12,i*2+3,0])
-        #     elif scroll_dir == 'left':
-        #         s.matrix.set_pixel(7,i,[15,i*2+3,0])
-        #     elif scroll_dir == 'right':
-        #         s.matrix.set_pixel(0,i,[3,i*2+3,8])
-        #     s.matrix.refresh()
-            
-
-s = uSenseHAT(I2C(1, I2C.MASTER))
-test(s)
