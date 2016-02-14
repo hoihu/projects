@@ -22,14 +22,14 @@ import font8x8vmsb as f
 # LED Matrix/Keys: ATTINY88 -> 0x46
 # IMU (Gyroscope, Accelerometer, Magnetometer) -> 0x1c,0x6a
 
-I2C_ADDR_MATRIX = const(0x46)
-I2C_ADDR_TEMP_PRESSURE = const(0x5c)
-I2C_ADDR_HUMID_TEMP = const(0x5f)
-# XXX not yet supported is gyro - missing driver
-I2C_IMU = const(0x1c)
-I2C_IMU2 = const(0x6a)
-
 class uSenseHAT:    
+    I2C_ADDR_MATRIX = const(0x46)
+    I2C_ADDR_TEMP_PRESSURE = const(0x5c)
+    I2C_ADDR_HUMID_TEMP = const(0x5f)
+    # XXX not yet supported is gyro - missing driver
+    I2C_IMU = const(0x1c)
+    I2C_IMU2 = const(0x6a)
+    
     def __init__(self, i2c):
         self.i2c = i2c
         # init board sensors
@@ -39,6 +39,9 @@ class uSenseHAT:
         # xxx gyro not yet supported
 
     # convenience methods to ease access to sensors
+    def read_key(self):
+        return self.matrix.read_key()
+        
     def read_pressure(self):
         return self.lps.read_pressure()
     
@@ -79,13 +82,3 @@ class uSenseHAT:
             self.putc_scroll(c)
             
                 
-def test(s):
-    scroll_dir = 'up'
-    akt_char = 0
-    while (1):    
-        s.write("{0:.1f}deg / {1:.1f}%rH / {2:.0f}hPa".format(s.read_temps()[0],s.read_humidity(),s.read_pressure()))
-        pyb.delay(2000)
-            
-
-s = uSenseHAT(I2C(1, I2C.MASTER))
-test(s)
