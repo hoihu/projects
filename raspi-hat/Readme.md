@@ -118,10 +118,8 @@ Example usage (on serial REPL)
 2
 >>> s.read_key()    # pressed
 8
->>> s.write("SenseHAT on MicroPython!")  # scrolling message on LED dispaly
+>>> s.write("SenseHAT on MicroPython!")  # scrolling message on LED display
 ```
-
-Text scrolling is also supported. You can use `s.write("HELLO WORLD")` to see a left scrolling message.
 
 It would be nice to use the TFT HAT's but that's probably a bigger challenge and might needs c-level framebuffer support which is apparently in development.
 
