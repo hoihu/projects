@@ -83,41 +83,8 @@ def test(s):
     scroll_dir = 'up'
     akt_char = 0
     while (1):    
-        s.write("HELLO WORLD!!")
-        # s.putc(akt_char)
-        # s.matrix.refresh()
-        # pyb.delay(200)
-        # while (not s.matrix.read_key()):
-        #     pyb.delay(20)
-        # for i in range(8):
-        #     s.matrix.scroll(dir='left')
-        #     s.matrix.refresh()
-        #     pyb.delay(20)
-        # akt_char += 1
-        # if akt_char > 117: 
-        #     akt_char = 0
-        # for i in range(16):
-        #     pyb.delay(20)
-        #     if s.matrix.read_key() == s.matrix.KEY_UP:
-        #         scroll_dir = 'up'
-        #     elif s.matrix.read_key() == s.matrix.KEY_DOWN:
-        #         scroll_dir = 'down'
-        #     elif s.matrix.read_key() == s.matrix.KEY_LEFT:
-        #         scroll_dir = 'left'
-        #     elif s.matrix.read_key() == s.matrix.KEY_RIGHT:
-        #         scroll_dir = 'right'
-        #     s.matrix.scroll(dir=scroll_dir)
-        #     if i>7:
-        #         i=15-i
-        #     if scroll_dir == 'up':
-        #         s.matrix.set_pixel(i,7,[3,i*2+3,12])
-        #     elif scroll_dir == 'down':
-        #         s.matrix.set_pixel(i,0,[12,i*2+3,0])
-        #     elif scroll_dir == 'left':
-        #         s.matrix.set_pixel(7,i,[15,i*2+3,0])
-        #     elif scroll_dir == 'right':
-        #         s.matrix.set_pixel(0,i,[3,i*2+3,8])
-        #     s.matrix.refresh()
+        s.write("{0:.1f}deg / {1:.1f}%rH / {2:.0f}hPa".format(s.read_temps()[0],s.read_humidity(),s.read_pressure()))
+        pyb.delay(2000)
             
 
 s = uSenseHAT(I2C(1, I2C.MASTER))
