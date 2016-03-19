@@ -1,4 +1,20 @@
-from pyb import I2C
+"""
+LSM9DS1 - 9DOF inertial sensor of STMicro driver for MicroPython
+
+The chip contains an accelerometer / gyroscope / magnetometer
+The accelerometer/gyroscope and the magnetometer are using different I2C
+addresses! The default addresses are valid for the SenseHAT board.
+
+Example usage:
+>>> from lsm9ds1 import LSM9DS1
+>>> lsm = LSM9DS1(I2C(1, I2C.MASTER))
+>>> lsm.gyro       # returns raw value of gyro sensor (x,y,z) in deg/sec
+(-0.4037476, 0.8224488, -0.05233765)
+>>> lsm.accel      # returns raw value of accel sensor (x,y,z) in g
+(-0.009338379, 0.07415771, 0.9942017)
+>>> lsm.magnet     # returns raw value of magnetometer (x,y,z) in gauss 
+(0.5358887, -0.001586914, -0.1228027)
+"""
 import array
 
 class LSM9DS1:
@@ -21,18 +37,20 @@ class LSM9DS1:
     
     SCALE_GYRO = [(245,0),(500,1),(2000,3)]
     SCALE_ACCEL = [(2,0),(4,2),(8,3),(16,1)]
-    #sensehat address gyro&accel = 106, magnetometer = 28
+    
     def __init__(self, i2c, address_gyro=106, address_magnet=28):
         self.i2c = i2c
         self.address_gyro = address_gyro
         self.address_magnet = address_magnet
-        # check proper connections of accelerometer/gyro and magnetometer
-        if ((i2c.mem_read(1, address_magnet, WHO_AM_I) != b'=') or \
-           (i2c.mem_read(1, address_gyro, WHO_AM_I) != b'h')):
-            raise OSError("No LSM9DS1 device")
+        # check id's of accelerometer/gyro and magnetometer
+        if (self.id_magnet != b'=') or (self.id_gyro != b'h'):
+            raise OSError("Invalid LSM9DS1 device, using address {}/{}".format(
+                    address_gyro,address_magnet))
         # allocate scratch buffer for efficient conversions and memread op's
         self.scratch = array.array('B',[0,0,0,0,0,0])
         self.scratch_int = array.array('h',[0,0,0])
+        self.init_gyro_accel()
+        self.init_magnetometer()
         
     def init_gyro_accel(self, sample_rate=1, scale_gyro=0, scale_accel=0):
         """ 
@@ -70,7 +88,7 @@ class LSM9DS1:
         self.scale_factor_gyro = 32768 / self.SCALE_GYRO[scale_gyro][0]
         self.scale_factor_accel = 32768 / self.SCALE_ACCEL[scale_accel][0]
         
-    def init_magnetometer(self, sample_rate=5, scale_magnet=0):
+    def init_magnetometer(self, sample_rate=6, scale_magnet=0):
         """
         using high performance mode
         sample rates = 0-7 (0.625, 1.25, 2.5, 5, 10, 20, 40, 80Hz)
@@ -87,13 +105,9 @@ class LSM9DS1:
         mv[3] = 0x08 # ctrl4: high performance z-axis
         mv[4] = 0x00 # ctr5: no fast read, no block update
         i2c.mem_write(mv[:5], addr, CTRL_REG1_M)
-        
-        # XXX
-        print(self.i2c.mem_read(5, addr, CTRL_REG1_M))
-        
         self.scale_factor_magnet = 32768 / ((scale_magnet+1) * 4 )
         
-    def write_magnet_calib(self,calibration):
+    def write_magnet_calib(self, calibration):
         """ calibration is a tuple of (x,y,z) 16bit readings from sensor """
         mv = memoryview(self.scratch) 
         mv[0] = calibration[0] & 0xff
@@ -102,28 +116,43 @@ class LSM9DS1:
         mv[3] = calibration[1] >> 8
         mv[4] = calibration[2] & 0xff
         mv[5] = calibration[2] >> 8
-        i2c.mem_write(mv[:6], self.address_magnet, OFFSET_REG_X_M)
+        self.i2c.mem_write(mv[:6], self.address_magnet, OFFSET_REG_X_M)
                 
-    def read_raw(self,addr):
+    @property
+    def id_gyro(self):
+        return self.i2c.mem_read(1, self.address_gyro, WHO_AM_I)
+    
+    @property
+    def id_magnet(self):
+        return self.i2c.mem_read(1, self.address_magnet, WHO_AM_I)
+                        
+    def read_raw(self, addr):
         return self.i2c.mem_read(1, self.address_gyro, addr)
         
-    def write_raw(self,addr,data):
+    def write_raw(self, addr, data):
         self.i2c.mem_write(data, self.address_gyro, addr)
-    
-    def read_magnet(self):
+        
+    @property
+    def magnet(self, raw_values=False):
         """ """
         mv = memoryview(self.scratch_int)
         f = self.scale_factor_magnet
         self.i2c.mem_read(mv, self.address_magnet, OUT_M | 0x80)
-        return (mv[0]/f, mv[1]/f, mv[2]/f)
-        
-    def read_gyro(self):
+        if raw_values:
+            return (mv[0], mv[1], mv[2])
+        else:
+            return (mv[0]/f, mv[1]/f, mv[2]/f)
+        # return (mv[0], mv[1], mv[2]),(mv[0]/f, mv[1]/f, mv[2]/f)
+    
+    @property
+    def gyro(self):
         mv = memoryview(self.scratch_int)
         f = self.scale_factor_gyro
         self.i2c.mem_read(mv, self.address_gyro, OUT_G | 0x80)
         return (mv[0]/f, mv[1]/f, mv[2]/f)
-        
-    def read_accel(self):
+    
+    @property
+    def accel(self):
         """ returns (x,y,z) acceleration vector in gravity units (9.81m/s^2) """
         mv = memoryview(self.scratch_int)
         f = self.scale_factor_accel
