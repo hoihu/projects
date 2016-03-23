@@ -2,15 +2,25 @@
 Driver for Atmel Coprocessor on SenseHAT board.
 
 The Atmel controls the LED driver chip and reads the key states. It's connected
-by I2C to the master device (normally a raspbery pi) and emulates a I2C memory
+by I2C to the master device and emulates a register based I2C memory
+Details on various constants/registers were extracted from the linux driver
+and the Atmel firmware.
 
-The gamma correction must be implemented at the driver side. It is taken
-from the Linux driver and is limited to 31 - seems to be a HW limitation. 
+Example usage:
+>>> from senseatmel import SenseAtmel
+>>> matrix = SenseAtmel(I2C(1,I2C.MASTER))
+>>> matrix.write("Hi MicroPython")  # show scrolling text on LED Matrix
+>>> matrix.set_pixel(4,4,(10,10,0))  # set individual pixel (4,4) with color (10,10,0)
+>>> matrix.scroll(dir='left')   # scroll LED Matrix by one row to the left
+>>> matrix.scroll(dir='top')   # scroll LED Matrix by one row to the top
+>>> matrix.key  # read key state (pressed, left, right, top, bottom)
+>>> matrix.set_low_light()  # use low-light gamma correction
 """
 
 from pyb import I2C
 import pyb
 import array
+import font8x8vmsb as f
 
 class SenseAtmel:
     RPISENSE_FB = const(0x00)
@@ -49,8 +59,10 @@ class SenseAtmel:
         # buffer for LED data
         self.vmem = array.array('B',[0 for  i in range(0,192)])
         self.vmem_mv = memoryview(self.vmem)
+        self.refresh()
         
-    def read_key(self):
+    @property
+    def key(self):
         """ 
         returns onboard joystick state 
         valid return values are KEY_xxx integer values
@@ -121,6 +133,33 @@ class SenseAtmel:
                 vmem[24*y] = 0
                 vmem[24*y+8] = 0
                 vmem[24*y+16] = 0    
+            
+    def putc_scroll(self, c, delay_time=50):
+        """ show a scrolling character, takes delay_time*8 msec to complete """
+        index = ord(c)
+        for x in range(8):
+            data = f.font[index*8 + x]
+            for y in range(7, -1, -1):
+                self.set_pixel(7, y, [(data & 0x1)*10,0,0])
+                data = data >> 1
+            self.scroll(dir='left')
+            self.refresh()
+            pyb.delay(delay_time)
+        
+    def putc(self, c):
+        """ show char on matrix """
+        index = ord(c)
+        for x in range(8):
+            data = f.font[index*8+x]
+            for y in range(7, -1, -1):
+                self.set_pixel(x, y, [(data & 0x1)*10, 0, 0])
+                data = data >> 1
+        self.refresh()
+        
+    def write(self,text):
+        """ show scrolling text on matrix """
+        for c in text:
+            self.putc_scroll(c)
                 
     def set_low_light(self):
         self.gamma = self.GAMMA_LOW_LIGHT
@@ -134,6 +173,8 @@ class SenseAtmel:
         color is a list of [r,g,b] values and is limited to 0..31
         which is a HW limitation of the sensehat
         """
+        assert x<8, "x range exceeded (>=8)"
+        assert y<8, "y range exceeded (>=8)"
         self.vmem[24*y+x] = self.gamma[color[0] & 0x1F]
         self.vmem[24*y+x+8] = self.gamma[color[1] & 0x1F]
         self.vmem[24*y+x+16] = self.gamma[color[2] & 0x1F]
