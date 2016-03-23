@@ -95,33 +95,35 @@ place the jumper as follows:
 * The pyboards internal LED states (the yellow/green/blue one) are available on the GPIO header pins 35,38,40. So a raspberry Pi can check if a reset is pending etc. Also that could be useful for automated test cases.
 
 ## How to use it
-I've written [example uPy code](ideeprom.py) that should run on most HAT's. It reads out the ID EEPROM of the HAT (connected on I2C1) and interprets the data (vendor,product serial etc). I tested it with the SenseHat and it works ok.
+I've written [example uPy code](ideeprom.py) that should run on most HAT's. It reads out the EEPROM of the HAT (connected on I2C1) and interprets the data (vendor,product serial etc). They call them "Atom" structures. I tested it with the SenseHat and it works ok.
 
-I also added basic support for the [SenseHAT](https://www.raspberrypi.org/products/sense-hat/) (LED matrix, joystick, temperature (both of pressure and humidity sensor),pressure and humidity readout) [here](sensehat.py).
+I added basic support for the [SenseHAT](https://www.raspberrypi.org/products/sense-hat/) (LED matrix, joystick, temperature (both of pressure and humidity sensor),pressure, humidity and IMU readout) [here](sensehat.py).
 
 Example usage (on serial REPL)
 ```python
->>> from pyb import I2C
+Example usage:
 >>> from sensehat import uSenseHAT
->>> s=uSenseHAT(I2C(1,I2C.MASTER))
->>> s.read_temps()  # reads temperature values from pressure and humidity sensor
-(21.92405, 21.86458)
->>> s.read_pressure()
-954.0762
->>> s.read_humidity()
-62.93954
->>> s.read_key()    # no key
+>>> sense = uSenseHAT(I2C(1, I2C.MASTER))
+>>> sense.matrix.write("Hi Micropython")   # scrolling text on LED matrix
+>>> sense.matrix.set_pixel(4,4,(20,20,0))  # set pixel (4,4) to color (20,20,0)
+>>> sense.humidity   # humidty in percent rH
+58.25
+>>> sense.temperature      # returns average temperature from HTS21 & LPS25 sensors
+21.2213
+>>> sense.pressure   # returns hPa
+970.8609
+>>> sense.key        # returns key state (pressed, left,right etc)
 0
->>> s.read_key()    # left key
-16
->>> s.read_key()    # right key
-2
->>> s.read_key()    # pressed
-8
->>> s.write("SenseHAT on MicroPython!")  # scrolling message on LED display
+>>> sense.imu       # returns raw value of gyro, accelerometer, magnetometer
+((-0.4037476, 0.8224488, -0.05233765), (-0.009338379, 0.07415771, 0.9942017), 
+(0.5358887, -0.001586914, -0.1228027))
 ```
+
+See also Youtube Videos:
+[here](https://www.youtube.com/watch?v=PeZRtHPF3iU) and [here](https://www.youtube.com/watch?v=LYzvXsxPtbw)
+
 
 It would be nice to use the TFT HAT's but that's probably a bigger challenge and might needs c-level framebuffer support which is apparently in development.
 
-## How to get it the board?
+## How to get the board?
 A first batch was manufactured at OSH Park and released as a shared project. You can order it [here](https://oshpark.com/shared_projects/iNvYGvMJ). Note that 3 boards cost around 54$ (it's a 4 layer design hence it's a more expensive than a 2 layer design)
