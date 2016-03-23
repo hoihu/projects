@@ -9,22 +9,20 @@ def drain_input(ser):
 
 write_test_script = """
 import pyb
+from pyb import I2C
+from balancing import Balance
+import json as j
+
 from fusion import Fusion
 
-import json as j
-from pyb import I2C
 i2c = I2C(1, I2C.MASTER)
 i2c.deinit()
 i2c.init(I2C.MASTER)
 
 from sensehat import uSenseHAT
 s = uSenseHAT(i2c)
-s.write(" ")
-
-s.lsm.init_gyro_accel()
-s.lsm.init_magnetometer()
-
 fuse = Fusion()
+balance = Balance(s.matrix)
 
 Calibrate = False
 
@@ -38,31 +36,14 @@ Calibrate = False
 #     int(fuse.magbias[2]*fm)]
 # )
 
-# class Game:
-#     def __init__(self, matrix):
-#         """ """
-#         self.velocity = (0,0)
-#         self.pos = (4,4)
-#         self.matrix = matrix
-#         self.show()
-#         
-#     def show(self):
-#         """ """
-#         # self.matrix.set_pixel(self.pos[0],self.pos[1],[20,0,0],refresh = True)
-#         
-#     def update(self, heading, pitch, roll):
-#         if pitch > 5.0:
-#             self.pos = (5,5)
-# 
-# game = Game(s.matrix)
 
 while (1):
-    fuse.update(s.read_accel(), s.read_gyro(), s.read_magnet())
+    fuse.update(s.lsm.accel, s.lsm.gyro, s.lsm.magnet)
             
-    print(j.dumps(dict(heading=fuse.heading, pitch=fuse.pitch, roll=fuse.roll)))
-    game.update(fuse.heading, fuse.pitch, fuse.roll)
+    # print(j.dumps(dict(heading=fuse.heading, pitch=fuse.pitch, roll=fuse.roll)))
+    balance.update(fuse.heading, fuse.pitch, fuse.roll)
     # print(j.dumps(dict(accel=data_accel, gyro=data_gyro, magnet=data_magnet)))
-    pyb.delay(20)
+    pyb.delay(5)
 
 """
 

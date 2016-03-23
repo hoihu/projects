@@ -173,6 +173,8 @@ class SenseAtmel:
         color is a list of [r,g,b] values and is limited to 0..31
         which is a HW limitation of the sensehat
         """
+        assert x<8, "x range exceeded (>=8)"
+        assert y<8, "y range exceeded (>=8)"
         self.vmem[24*y+x] = self.gamma[color[0] & 0x1F]
         self.vmem[24*y+x+8] = self.gamma[color[1] & 0x1F]
         self.vmem[24*y+x+16] = self.gamma[color[2] & 0x1F]

@@ -15,9 +15,8 @@ I2c master  -------------> HTS21 (Humidity/Temp  @ addr 0x5f)       +
                 |          Joystick Keys (Atmel  @ addr 0x46)       |
                 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-The class is a wrapper for the 4 sensor IC's and provides
-properties like humidity, temperature, pressure etc.
-Please see documentation of driver for detailed description 
+The class acts as a wrapper to simplify access to the 4 sensor IC's
+Please see documentation of driver for detailed description
 
 Example usage:
 >>> from sensehat import uSenseHAT
@@ -26,8 +25,8 @@ Example usage:
 >>> sense.matrix.set_pixel(4,4,(20,20,0))  # set pixel (4,4) to color (20,20,0)
 >>> sense.humidity   # humidty in percent rH
 58.25
->>> sense.temp      # returns temperature from HTS21 & LPS25 sensors
-(21.2213, 21.32232)
+>>> sense.temperature      # returns average temperature from HTS21 & LPS25 sensors
+21.2213
 >>> sense.pressure   # returns hPa
 970.8609
 >>> sense.key        # returns key state (pressed, left,right etc)
@@ -44,7 +43,7 @@ import array
 from hts21 import HTS21
 from lps25 import LPS25
 from lsm9ds1 import LSM9DS1
-from senseatmel import SenseAtmel
+from atmel import SenseAtmel
 
 class uSenseHAT:    
     I2C_ADDR_MATRIX = const(0x46)
