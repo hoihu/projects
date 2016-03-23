@@ -52,7 +52,7 @@ class LSM9DS1:
         self.init_gyro_accel()
         self.init_magnetometer()
         
-    def init_gyro_accel(self, sample_rate=1, scale_gyro=0, scale_accel=0):
+    def init_gyro_accel(self, sample_rate=5, scale_gyro=0, scale_accel=0):
         """ 
         sample rate (gy&acc) = 0-6 (off, 14.9Hz, 59.5Hz, 119Hz, 238Hz, 476Hz, 952Hz)
         scale_gyro = 0-2 (245dps, 500dps, 2000dps ) 
