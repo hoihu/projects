@@ -16,7 +16,6 @@
 import pyb
 from pyb import I2C
 from balancing import Balance
-import json as j
 
 from fusion import Fusion
 
@@ -30,6 +29,7 @@ fuse = Fusion()
 balance = Balance(s.matrix)
 
 while (1):
-    fuse.update(s.lsm.accel, s.lsm.gyro, s.lsm.magnet)
-    balance.update(fuse.heading, fuse.pitch, fuse.roll)
+    for g,a in s.lsm.iter_accel_gyro():
+        fuse.update(a, g, s.lsm.magnet)
+        balance.update(fuse.heading, fuse.pitch, fuse.roll)
     pyb.delay(5)
