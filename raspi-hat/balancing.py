@@ -35,8 +35,8 @@ class Balance:
         self.matrix.refresh()
         
     def update(self, heading, pitch, roll):
-        self.v_x += pitch / 1000
-        self.v_y -= roll / 1000
+        self.v_x += pitch / 600
+        self.v_y -= roll / 600
         
         self.v_x = clamp(self.v_x, -0.7, 0.7)        
         self.v_y = clamp(self.v_y, -0.7, 0.7)        
