@@ -30,6 +30,6 @@ balance = Balance(s.matrix)
 
 while (1):
     for g,a in s.lsm.iter_accel_gyro():
-        fuse.update(a, g, s.lsm.magnet)
+        fuse.update(a, g, s.lsm.read_magnet())
         balance.update(fuse.heading, fuse.pitch, fuse.roll)
     pyb.delay(5)

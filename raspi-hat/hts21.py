@@ -4,9 +4,9 @@ HTS21 - STMicro I2C temperature and humidity sensor driver for MicroPython
 Example usage:
 >>> from hts21 import HTS21
 >>> hts = HTS21(I2C(1, I2C.MASTER), 0x5f)
->>> hts.temperature
+>>> hts.read_temperature()
 22.06582
->>> hts.humidity
+>>> hts.read_humidity()
 57.44328
 """
 import array
@@ -32,8 +32,8 @@ class HTS21:
         """
         self.i2c = i2c
         self.address = address
-        if self.id != b'\xbc':
-            raise OSError("No HTS21 detected on address {}".format(address))
+        if (self.read_id() != b'\xbc'):
+            raise OSError("No HTS21 device on address {}".format(address))
         self.hts_calib = array.array("h",[0,0,0,0,0,0,0,0,0,0])
         mv = memoryview(self.hts_calib)
         # init measurement mode, enable sensor
@@ -52,20 +52,17 @@ class HTS21:
         mv[7] = int.from_bytes(i2c.mem_read(2, address, HTS_CAL_H0T0 | 0x80))
         mv[8] = int.from_bytes(i2c.mem_read(2, address, HTS_CAL_H1T0 | 0x80))
 
-    @property
-    def id(self):
+    def read_id(self):
         return self.i2c.mem_read(1, self.address, HTS_WHO_AM_I)
 
-    @property
-    def humidity(self):
+    def read_humidity(self):
         """ returns humidity in %rH """
         # see TN1218 appnote for details about the formula
         mv = memoryview(self.hts_calib)   
         mv[9] = int.from_bytes(self.i2c.mem_read(2, self.address, HTS_HUMID_OUT | 0x80))
         return mv[5] + ((mv[6] - mv[5]) * (mv[9] - mv[7])) / (mv[8] - mv[7])
         
-    @property
-    def temperature(self):
+    def read_temperature(self):
         """ returns temperature in degree celsius """
         # see TN1218 appnote for details
         mv = memoryview(self.hts_calib)   

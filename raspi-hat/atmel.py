@@ -13,7 +13,7 @@ Example usage:
 >>> matrix.set_pixel(4,4,(10,10,0))  # set individual pixel (4,4) with color (10,10,0)
 >>> matrix.scroll(dir='left')   # scroll LED Matrix by one row to the left
 >>> matrix.scroll(dir='top')   # scroll LED Matrix by one row to the top
->>> matrix.key  # read key state (pressed, left, right, top, bottom)
+>>> matrix.read_key()  # read key state (pressed, left, right, top, bottom)
 >>> matrix.set_low_light()  # use low-light gamma correction
 """
 
@@ -61,8 +61,7 @@ class SenseAtmel:
         self.vmem_mv = memoryview(self.vmem)
         self.refresh()
         
-    @property
-    def key(self):
+    def read_key(self):
         """ 
         returns onboard joystick state 
         valid return values are KEY_xxx integer values
