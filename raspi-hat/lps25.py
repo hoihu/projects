@@ -7,9 +7,9 @@ see AN4450 application note for additional details of implementation
 Example usage:
 >>> from lps25 import LPS25
 >>> lps = LPS25(I2C(1, I2C.MASTER), 0x5c)
->>> lps.pressure
+>>> lps.read_pressure()
 944.4485
->>> lps.temperature
+>>> lps.read_temperature()
 21.71667
 """
 
@@ -26,27 +26,24 @@ class LPS25:
         """
         self.i2c = i2c
         self.address = address
-        if self.id != b'\xbd':
-            raise OSError("No LPS25 detected on address {}".format(address))
+        if self.read_id() != b'\xbd':
+            raise OSError("No LPS25 device on address {}".format(address))
         i2c.mem_write(0x05, address, 0x10)
         i2c.mem_write(0xc1, address, 0x2e)
         i2c.mem_write(0x40, address, 0x21)
         i2c.mem_write(0x90, address, 0x20)
         
-    @property
-    def id(self):
+    def read_id(self):
         return self.i2c.mem_read(1, self.address, LPS_WHO_AM_I)
     
-    @property
-    def pressure(self):
+    def read_pressure(self):
         """ returns pressure in hPa """
         data = int.from_bytes(self.i2c.mem_read(3, self.address, LPS_PRESSURE_OUT | 0x80))
         if data & 0x80000000: 
             data = data - 0xffffffff
         return data / 4096
             
-    @property
-    def temperature(self):
+    def read_temperature(self):
         """ return temperature in degrees celsius """
         data = int.from_bytes(self.i2c.mem_read(2, self.address, LPS_TEMP_OUT | 0x80))
         if data & 0x8000: 
