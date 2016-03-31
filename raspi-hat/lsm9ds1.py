@@ -10,11 +10,11 @@ the iter_accel_gyro generator to access it.
 Example usage:
 >>> from lsm9ds1 import LSM9DS1
 >>> lsm = LSM9DS1(I2C(1, I2C.MASTER))
->>> lsm.gyro       # (x,y,z) in deg/sec
+>>> lsm.read_gyro()       # (x,y,z) in deg/sec
 (-0.4037476, 0.8224488, -0.05233765)
->>> lsm.accel      # (x,y,z) in g
+>>> lsm.read_accel()      # (x,y,z) in g
 (-0.009338379, 0.07415771, 0.9942017)
->>> lsm.magnet     # (x,y,z) in gauss 
+>>> lsm.read_magnet()     # (x,y,z) in gauss 
 (0.5358887, -0.001586914, -0.1228027)
 >>> for g,a in lsm.iter_accel_gyro(): print(g,a)    # using fifo
 """
@@ -45,7 +45,7 @@ class LSM9DS1:
         self.address_gyro = address_gyro
         self.address_magnet = address_magnet
         # check id's of accelerometer/gyro and magnetometer
-        if (self.id_magnet != b'=') or (self.id_gyro != b'h'):
+        if (self.read_id_magnet() != b'=') or (self.read_id_gyro() != b'h'):
             raise OSError("Invalid LSM9DS1 device, using address {}/{}".format(
                     address_gyro,address_magnet))
         # allocate scratch buffer for efficient conversions and memread op's
@@ -123,16 +123,13 @@ class LSM9DS1:
         mv[5] = offset[2] >> 8
         self.i2c.mem_write(mv[:6], self.address_magnet, OFFSET_REG_X_M)
                 
-    @property
-    def id_gyro(self):
+    def read_id_gyro(self):
         return self.i2c.mem_read(1, self.address_gyro, WHO_AM_I)
     
-    @property
-    def id_magnet(self):
+    def read_id_magnet(self):
         return self.i2c.mem_read(1, self.address_magnet, WHO_AM_I)
                         
-    @property
-    def magnet(self):
+    def read_magnet(self):
         """Returns magnetometer vector in gauss.
         raw_values: if True, the non-scaled adc values are returned
         """
@@ -141,16 +138,14 @@ class LSM9DS1:
         self.i2c.mem_read(mv, self.address_magnet, OUT_M | 0x80)
         return (mv[0]/f, mv[1]/f, mv[2]/f)
     
-    @property
-    def gyro(self):
+    def read_gyro(self):
         """Returns gyroscope vector in degrees/sec."""
         mv = memoryview(self.scratch_int)
         f = self.scale_gyro
         self.i2c.mem_read(mv, self.address_gyro, OUT_G | 0x80)
         return (mv[0]/f, mv[1]/f, mv[2]/f)
     
-    @property
-    def accel(self):
+    def read_accel(self):
         """Returns acceleration vector in gravity units (9.81m/s^2)."""
         mv = memoryview(self.scratch_int)
         f = self.scale_accel
@@ -163,7 +158,7 @@ class LSM9DS1:
             fifo_state = self.i2c.mem_read(1, self.address_gyro, FIFO_SRC)[0]
             if fifo_state & 0x3f:
                 # print("Available samples=%d" % (fifo_state & 0x1f))
-                yield self.gyro,self.accel
+                yield self.read_gyro(),self.read_accel()
             else:
                 break
     

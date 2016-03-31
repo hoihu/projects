@@ -83,7 +83,7 @@ place the jumper as follows:
 * JP5/JP6 (at the top left) vertically
 * JP2 inserted (3V3 provided by Pyboard)
 
-#### Raspberry configuration (pyboard acts like a HAT for a raspberry attached to the 40pin header)
+#### Raspberry configuration (pyboard acts like a HAT that is attached to a raspberry via the 40pin connector)
 place the jumper as follows:
 
 ![](./pics/jumper-raspi.png)
@@ -95,10 +95,39 @@ place the jumper as follows:
 * The pyboards internal LED states (the yellow/green/blue one) are available on the GPIO header pins 35,38,40. So a raspberry Pi can check if a reset is pending etc. Also that could be useful for automated test cases.
 
 ## How to use it
-I've written [example uPy code](ideeprom.py) that should run on most HAT's. It reads out the EEPROM of the HAT (connected on I2C1) and interprets the data (vendor,product serial etc). They call them "Atom" structures. I tested it with the SenseHat and it works ok.
+### To connect a HAT to the pyboard
+#### ID EEPROM readout and ATOM parser
+[ideeprom.py](ideeprom.py) gives an example on how to reads the internal EEPROM of the HAT and interpret data information like vendor,product serial. They are structured in so-called ATOM binary blobs. In principle, that should work on any HAT board but I've tested it only on the SenseHAT so far.
 
-I added basic support for the [SenseHAT](https://www.raspberrypi.org/products/sense-hat/) (LED matrix, joystick, temperature (both of pressure and humidity sensor),pressure, humidity and IMU readout) [here](sensehat.py).
+#### Pyboard as Master device, use HAT as a shield
+As an example, I added basic support for the [SenseHAT](https://www.raspberrypi.org/products/sense-hat/) that supports
+- LED matrix with/without scrolling in any directions
+- LED matrix text display (with and without scrollin), 
+- joystick read (up/down/left/right,pressed events), 
+- temperature of both of pressure and humidity sensor
+- pressure readout of barometric sensor
+- humidity readout
+- ..and IMU readout (accelerometer, gyroscope and magnetometer)!
 
+Overview 
+```
+                SenseHAT Board
+                +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+                |                                                   |
+I2c master  -------------> HTS21 (Humidity/Temp  @ addr 0x5f)       +
+(RPi/Pyboard)   |  |                                                |
+                +  |-----> LPS25H (Pressure/Temp @ addr 0x5c)       +
+                |  |                                                |
+                +  |-----> LSM9DS1 (9DOF IMU     @ addr 0x1c, 0x6a) +
+                |  |                                                |
+                +  |-----> 8x8 RGB LED Matrix &                     +
+                |          Joystick Keys (Atmel  @ addr 0x46)       |
+                +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
+the drivers are divided into single python files ([atmel.py](atmel.py), [lps25.py](lps25.py), [hts21.py](hts21.py), [LSM9DS1](lsm9ds1.py) so they can be reused.
+ 
+[sensehat.py](sensehat.py) is a helper to configure all drivers automatically for the SenseHAT board
+ 
 Example usage (on serial REPL)
 ```python
 Example usage:
@@ -106,15 +135,15 @@ Example usage:
 >>> sense = uSenseHAT(I2C(1, I2C.MASTER))
 >>> sense.matrix.write("Hi Micropython")   # scrolling text on LED matrix
 >>> sense.matrix.set_pixel(4,4,(20,20,0))  # set pixel (4,4) to color (20,20,0)
->>> sense.humidity   # humidty in percent rH
+>>> sense.read_humidity()   # humidty in percent rH
 58.25
->>> sense.temperature      # returns average temperature from HTS21 & LPS25 sensors
+>>> sense.read_temperature()      # returns average temperature from HTS21 & LPS25 sensors
 21.2213
->>> sense.pressure   # returns hPa
+>>> sense.read_pressure()   # returns hPa
 970.8609
->>> sense.key        # returns key state (pressed, left,right etc)
+>>> sense.read_key()        # returns key state (pressed, left,right etc)
 0
->>> sense.imu       # returns raw value of gyro, accelerometer, magnetometer
+>>> sense.read_imu()       # returns raw value of gyro, accelerometer, magnetometer
 ((-0.4037476, 0.8224488, -0.05233765), (-0.009338379, 0.07415771, 0.9942017), 
 (0.5358887, -0.001586914, -0.1228027))
 ```
