@@ -7,6 +7,8 @@ For example 8266 boards see Adafruit's Huzzah Feather board and of course the gr
 The build instructions for the dockerfiles were taken from the espopen website:
 https://github.com/pfalcon/esp-open-sdk
 
+The dockerfile automatically clones the microptython repository.
+
 ## How to use it
 1. install docker on your host system: https://docs.docker.com/engine/installation/ 
 2. checkout this repository and store it somewhere on your HDD (e.g. home/xxx/projects)
@@ -26,17 +28,18 @@ Call your docker image with a volume:
 `docker run -it -v <yourpath>:<containerpath> espopen`
 where ``<yourpath>` is the path on your HDD that is shared (e.g.`/Users/martin`) and <containerpath> is the path within your container (e.g. `/share`)
 
-Then on the commanline, copy the firmware files:
-`cp firmware-combined.bin /share ` and you'll find them on your host system under /Users/martin
-
+Then on the bash commandline (within the image), copy the firmware files:
+`cp firmware-combined.bin /share ` and you'll find them on your host system under `/Users/martin`
 
 ## Install Build dockerfiles
- For convenience I've added another dockerfile that is based on the above image and automatically pulls the newest uPy and builds it.
+If you want to update micropython and build it you can do it interactive via bash, as explained above.
+
+A shortcut is to use the build dockerfile. It is based on the espopen image and automatically pulls the newest uPy and builds it.
  
- To installl it (assuming you have built the espopen image as explained above):
- 1. run `docker build -f Dockerfile.build -t espbuild .`
+To installl it (assuming you have built the espopen image as explained above):
+1. run `docker build -f Dockerfile.build -t espbuild .` (you only need to do that once)
  
- Then to update and compile everything simply:
+Then to update and compile everything simply:
  `docker run espbuild`
  
  
