@@ -1,0 +1,4 @@
+FROM espopen
+
+ADD build /home/xtensa/
+ENTRYPOINT ["/home/xtensa/build"]
