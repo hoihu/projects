@@ -31,16 +31,16 @@ where ``<yourpath>` is the path on your HDD that is shared (e.g.`/Users/martin`)
 Then on the bash commandline (within the image), copy the firmware files:
 `cp firmware-combined.bin /share ` and you'll find them on your host system under `/Users/martin`
 
-## Install Build dockerfiles
+## Update and build Micropython
 If you want to update micropython and build it you can do it interactive via bash, as explained above.
 
 A shortcut is to use the build dockerfile. It is based on the espopen image and automatically pulls the newest uPy and builds it.
  
-To installl it (assuming you have built the espopen image as explained above):
-1. run `docker build -f Dockerfile.build -t espbuild .` (you only need to do that once)
+To installl it (assuming you have built the espopen image as explained above): `docker build -f Dockerfile.build -t espbuild .` (you only need to do that once)
  
-Then to update and compile everything simply:
- `docker run espbuild`
+Then to update and compile everything: `docker run espbuild`
+
+From now on, if you want the latest and greatest micropython esp8266 image, just enter `docker run espbuild`  :))
  
  
  
