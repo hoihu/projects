@@ -1,3 +1,7 @@
+# ------ remark hoihu: for upstream changes please check
+# ------ https://github.com/micropython-IMU/micropython-fusion
+# -------------------------------------------------------------
+
 # Sensor fusion for the micropython board. 25th June 2015
 # Ported to MicroPython/Pyboard by Peter Hinch.
 # V0.7 Yaw replaced with heading
