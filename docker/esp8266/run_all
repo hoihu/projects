@@ -1,0 +1,7 @@
+#!/bin/bash
+
+cd /home/xtensa
+git clone --recursive https://github.com/micropython/micropython.git
+cd /home/xtensa/micropython/esp8266
+make axtls
+make

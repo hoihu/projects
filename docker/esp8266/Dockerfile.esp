@@ -36,7 +36,8 @@ RUN apt-get update && apt-get install -y \
     python-serial sed \
     unzip \
     bash \
-    wget
+    wget \
+    help2man
 
 ## Clean apt cache
 RUN apt-get -y autoremove && \

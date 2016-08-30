@@ -1,0 +1,14 @@
+#!/bin/bash
+######################################################
+# dockerfile to flash micropython image on a 8266 board
+# using a TCP rfc2217 port (pyserial supports that)
+#
+# - needs rfc2217 server running on the host machine
+#   (it's part of the pyserial examples)
+# 
+# Example:
+# python rfc2217_server.py -p 4554 -v /dev/cu.SLAB_USBtoUART
+ 
+cd /home/xtensa/micropython/esp8266
+python esptool.py --port rfc2217://localhost:4554 --baud 480000 write_flash --flash_size=8m 0 firmware-combined.bin 
+ 
