@@ -70,7 +70,7 @@ class LSM9DS1:
         # angular control registers 1-3 / Orientation
         mv[0] = ((sample_rate & 0x07) << 5) | ((self.SCALE_GYRO[scale_gyro][1] & 0x3) << 3) 
         mv[1:4] = b'\x00\x00\x00'
-        i2c.mem_write(mv[:5], addr, CTRL_REG1_G)
+        i2c.writeto_mem(addr, CTRL_REG1_G, mv[:5])
         # ctrl4 - enable x,y,z, outputs, no irq latching, no 4D
         # ctrl5 - enable all axes, no decimation
         # ctrl6 - set scaling and sample rate of accel 
@@ -81,11 +81,11 @@ class LSM9DS1:
         mv[3] = 0x00
         mv[4] = 0x4
         mv[5] = 0x2
-        i2c.mem_write(mv[:6], addr, CTRL_REG4_G )
+        i2c.writeto_mem(addr, CTRL_REG4_G, mv[:6])
         
         # fifo: use continous mode (overwrite old data if overflow)
-        i2c.mem_write(0x00, addr, FIFO_CTRL_REG)
-        i2c.mem_write(6 << 5, addr, FIFO_CTRL_REG)
+        i2c.writeto_mem(addr, FIFO_CTRL_REG, 0)
+        i2c.writeto_mem(addr, FIFO_CTRL_REG, 6 << 5)
         
         self.scale_gyro = 32768 / self.SCALE_GYRO[scale_gyro][0]
         self.scale_accel = 32768 / self.SCALE_ACCEL[scale_accel][0]
@@ -105,7 +105,7 @@ class LSM9DS1:
         mv[2] = 0x00 # ctrl3: continous conversion, no low power, I2C
         mv[3] = 0x08 # ctrl4: high performance z-axis
         mv[4] = 0x00 # ctr5: no fast read, no block update
-        i2c.mem_write(mv[:5], addr, CTRL_REG1_M)
+        i2c.writeto_mem(addr, CTRL_REG1_M, mv[:5])
         self.scale_factor_magnet = 32768 / ((scale_magnet+1) * 4 )
         
     def calibrate_magnet(self, offset):
@@ -121,13 +121,13 @@ class LSM9DS1:
         mv[3] = offset[1] >> 8
         mv[4] = offset[2] & 0xff
         mv[5] = offset[2] >> 8
-        self.i2c.mem_write(mv[:6], self.address_magnet, OFFSET_REG_X_M)
+        self.i2c.writeto_mem(self.address_magnet, OFFSET_REG_X_M, mv[:6])
                 
     def read_id_gyro(self):
-        return self.i2c.mem_read(1, self.address_gyro, WHO_AM_I)
+        return self.i2c.readfrom_mem(self.address_gyro, WHO_AM_I, 1)
     
     def read_id_magnet(self):
-        return self.i2c.mem_read(1, self.address_magnet, WHO_AM_I)
+        return self.i2c.readfrom_mem(self.address_magnet, WHO_AM_I, 1)
                         
     def read_magnet(self):
         """Returns magnetometer vector in gauss.
@@ -135,30 +135,29 @@ class LSM9DS1:
         """
         mv = memoryview(self.scratch_int)
         f = self.scale_factor_magnet
-        self.i2c.mem_read(mv, self.address_magnet, OUT_M | 0x80)
+        self.i2c.readfrom_mem(self.address_magnet, OUT_M | 0x80, mv)
         return (mv[0]/f, mv[1]/f, mv[2]/f)
     
     def read_gyro(self):
         """Returns gyroscope vector in degrees/sec."""
         mv = memoryview(self.scratch_int)
         f = self.scale_gyro
-        self.i2c.mem_read(mv, self.address_gyro, OUT_G | 0x80)
+        self.i2c.readfrom_mem(self.address_gyro, OUT_G | 0x80, mv)
         return (mv[0]/f, mv[1]/f, mv[2]/f)
     
     def read_accel(self):
         """Returns acceleration vector in gravity units (9.81m/s^2)."""
         mv = memoryview(self.scratch_int)
         f = self.scale_accel
-        self.i2c.mem_read(mv, self.address_gyro, OUT_XL | 0x80)
+        self.i2c.readfrom_mem(self.address_gyro, OUT_XL | 0x80, mv)
         return (mv[0]/f, mv[1]/f, mv[2]/f)
         
     def iter_accel_gyro(self):
         """A generator that returns tuples of (gyro,accelerometer) data from the fifo."""
         while True:
-            fifo_state = self.i2c.mem_read(1, self.address_gyro, FIFO_SRC)[0]
+            fifo_state = self.i2c.readfrom_mem(self.address_gyro, FIFO_SRC, 1)[0]
             if fifo_state & 0x3f:
                 # print("Available samples=%d" % (fifo_state & 0x1f))
                 yield self.read_gyro(),self.read_accel()
             else:
                 break
-    
