@@ -33,10 +33,14 @@ RUN apt-get update && apt-get install -y \
     ncurses-dev \
     libexpat-dev \
     python \
-    python-serial sed \
+    python-serial \
+    sed \
+    python-dev \
     unzip \
     bash \
-    wget
+    wget \
+    nano \
+    help2man
 
 ## Clean apt cache
 RUN apt-get -y autoremove && \

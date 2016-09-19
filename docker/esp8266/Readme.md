@@ -17,7 +17,7 @@ The dockerfile automatically clones the microptython repository.
 at the end you'll have a docker image called `espopen` with everything setup (SDK and micropython checkout)
 
 You can use it for example like this:
-`docker run espopen -it bash`
+`docker run -it espopen`
 
 that will open a bash shell with user `xtensa`. From there you can do the usual staff like `make`, `git pull origin` etc.
 
@@ -43,5 +43,19 @@ Then to update and compile everything: `docker run espbuild`
 From now on, if you want the latest and greatest micropython esp8266 image, just enter `docker run espbuild`  :))
  
  
+ ## TCP/IP flashing
+ If you want to flash your esp board over a local tcp connection (e.g if you are using docker), try:
+ 
+ `python rfc2217_server.py -p 4554 -v /dev/cu.SLAB_USBtoUART`
+
+ you should now see something like
+
+`INFO:root:RFC 2217 TCP/IP to Serial redirector - type Ctrl-C / BREAK to quit`
+`INFO:root:Serving serial port: /dev/cu.SLAB_USBtoUART`
+`INFO:root:TCP/IP port: 4554`
+
+now flash your esp device using
+`python esptool.py --port rfc2217://localhost:4554 --baud 480000 write_flash --flash_size=8m 0 firmware-combined.bin`
+
  
  

@@ -1,0 +1,34 @@
+<html> 
+<head> 
+<title>AiCWeb</title> 
+  <link rel="icon" href="data:;base64,=">
+  <style type="text/css" id="style">
+	  .dimwrap { border: 2px solid red; height: 210px; width: 70px;}
+	  .dimSlide { transform: scaleX(2) rotate(270deg); position: relative; top: 80px; left: -32px;}
+	  .dimVal { width: 45px; position: relative; top: 20px; left: 12px}
+  </style>
+<script language="javascript"> 
+function dimSet(evt) {
+	var me, he;
+    var resp, xmlhttp=new XMLHttpRequest();   
+	me = evt.target;
+	he = document.getElementById(me.id == "dimVal"? "dimSlide":"dimVal"); // need my other value node
+    xmlhttp.onreadystatechange=function() {
+        if (xmlhttp.readyState==4 && xmlhttp.status==200){
+			resp = xmlhttp.responseText;
+			console.log(resp);
+			he.value = parseInt(resp);
+		}
+	}
+    xmlhttp.open("GET","Val=" + me.value,true); xmlhttp.send()	
+} 
+</script> 
+</head> 
+<body> 
+    <h1>Ajax in Control WebPage</h1>
+    <div class="dimwrap" id="dimwrap">
+	  <input class="dimVal" type="number" id="dimVal" min="0" max="180" step="3" value="0" onclick="dimSet(event)" oninput="dimSet(event)" > 
+	  <input class= "dimSlide" type="range" id="dimSlide" min="0" max="180" step="3" value="0" onclick="dimSet(event)" oninput="dimSet(event)" >
+    </div>
+</body>
+</html>
