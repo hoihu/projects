@@ -2,6 +2,8 @@
 
 cd /home/xtensa
 git pull --recursive https://github.com/micropython/micropython.git
+cd /home/xtensa/micropython
+make -C mpy-cross
 cd /home/xtensa/micropython/esp8266
 make clean
 make axtls
