@@ -4,7 +4,23 @@ import utime, time
 import machine, neopixel
 np = neopixel.NeoPixel(machine.Pin(4), 14)
 
-WIFI_SSID_HOME = 'Fischernetz'
+def test():
+    for i in range(64):
+        tmp = int((10*i)/64)
+        np[i] = [tmp, 10-tmp,0]
+    np.write()
+    
+
+def clear():
+    for i in range(64):
+        np[i] = [0,0,0]
+    np.write()
+
+
+import machine, neopixel
+np = neopixel.NeoPixel(machine.Pin(14), 64)
+
+WIFI_SSID_HOME = 'xxxxx'
 
 """ 
 checks for a given home wifi network and shows on neopixel if it's available
