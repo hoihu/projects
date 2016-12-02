@@ -1,0 +1,14 @@
+# build image
+make BOARD=LIMIFROG
+
+# deploy (use pydfu.py from micropython/tools folder..)
+python pydfu.py -u firmware.dfu 
+
+#list ports
+python3 -m there detect
+
+# repl
+python3 -m there -p/dev/cu.usbmodem14142 -i
+
+# frozen 
+make BOARD=LIMIFROG FROZEN_MPY_DIR=frozen
