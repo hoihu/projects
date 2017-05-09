@@ -29,6 +29,9 @@
 # Multiple Writer instances may be created, each rendering a font to the
 # same Display object.
 
+# ------- temporary adjustment made by hoihu - dez 2016
+# ------- check upstream code repo: https://github.com/peterhinch/micropython-font-to-py
+
 VERT = 0
 HORIZ = 1
 WEIRD = 2
