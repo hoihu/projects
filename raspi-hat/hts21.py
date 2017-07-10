@@ -1,70 +1,46 @@
 """
-HTS21 - STMicro I2C temperature and humidity sensor driver for MicroPython
+HTS221 - STMicro I2C temperature and humidity sensor driver for MicroPython
 
 Example usage:
->>> from hts21 import HTS21
->>> hts = HTS21(I2C(1, I2C.MASTER), 0x5f)
->>> hts.read_temperature()
-22.06582
->>> hts.read_humidity()
-57.44328
+>>> from hts221 import HTS221
+>>> hts = HTS221(I2C(1))
+>>> hts.measure()
+(30.8557, 62.07305)
 """
 import array
+import struct
 
-class HTS21:    
+class HTS221:    
     HTS_WHO_AM_I = const(0xf)
     HTS_HUMID_OUT = const(0x28)
-    HTS_CAL_H0x2 = const(0x30)
-    HTS_CAL_H1x2 = const(0x31)
-    HTS_CAL_H0T0 = const(0x36)
-    HTS_CAL_H1T0 = const(0x3a)
-
     HTS_TEMP_OUT = const(0x2a)
-    HTS_CAL_T0DEGx8 = const(0x32)
-    HTS_CAL_T1DEGx8 = const(0x33)
-    HTS_CAL_T0 = const(0x3c)
-    HTS_CAL_T1 = const(0x3e)
     
-    def __init__(self, i2c, address):
-        """
-        read calibration values and start sensor measurements
-        see TN1218 appnote for details
-        """
+    def __init__(self, i2c, addr=95):
         self.i2c = i2c
-        self.address = address
-        if (self.read_id() != b'\xbc'):
-            raise OSError("No HTS21 device on address {}".format(address))
-        self.hts_calib = array.array("h",[0,0,0,0,0,0,0,0,0,0])
-        mv = memoryview(self.hts_calib)
-        # init measurement mode, enable sensor
-        i2c.mem_write(0x81, address, 0x20)
-        # read temperature calibration values
-        mv[0] = int.from_bytes(i2c.mem_read(1, address, HTS_CAL_T0DEGx8))
-        mv[1] = int.from_bytes(i2c.mem_read(1, address, HTS_CAL_T1DEGx8))
-        mv[2] = int.from_bytes(i2c.mem_read(2, address, HTS_CAL_T0 | 0x80))
-        mv[3] = int.from_bytes(i2c.mem_read(2, address, HTS_CAL_T1 | 0x80))
-        msbs = int.from_bytes(i2c.mem_read(1, address, 0x35))
-        mv[0] = (mv[0] | ((msbs & 0x3) << 8)) >> 3
-        mv[1] = (mv[1] | ((msbs & 0xc) << 6)) >> 3
-        # read humidity calibration values
-        mv[5] = int.from_bytes(i2c.mem_read(1, address, HTS_CAL_H0x2)) >> 1
-        mv[6] = int.from_bytes(i2c.mem_read(1, address, HTS_CAL_H1x2)) >> 1
-        mv[7] = int.from_bytes(i2c.mem_read(2, address, HTS_CAL_H0T0 | 0x80))
-        mv[8] = int.from_bytes(i2c.mem_read(2, address, HTS_CAL_H1T0 | 0x80))
+        self.addr = addr
+        if (self.i2c.readfrom_mem(addr, HTS_WHO_AM_I, 1) != b'\xbc'):
+            raise OSError("No HTS221 device on address {} found".format(addr))
 
-    def read_id(self):
-        return self.i2c.mem_read(1, self.address, HTS_WHO_AM_I)
-
-    def read_humidity(self):
-        """ returns humidity in %rH """
-        # see TN1218 appnote for details about the formula
-        mv = memoryview(self.hts_calib)   
-        mv[9] = int.from_bytes(self.i2c.mem_read(2, self.address, HTS_HUMID_OUT | 0x80))
-        return mv[5] + ((mv[6] - mv[5]) * (mv[9] - mv[7])) / (mv[8] - mv[7])
+        # enable sensor and read calibration
+        i2c.writeto_mem(addr, 0x20, b'\x85')
+        self.h0_rh, h1_rh, self.t0_deg, t1_deg, res, t1t0msb, self.h0_out,res1, h1_out, self.t0_out, t1_out = struct.unpack('<BBBBBBhhhhh', i2c.readfrom_mem(95,0x30|0x80, 16))
         
-    def read_temperature(self):
-        """ returns temperature in degree celsius """
-        # see TN1218 appnote for details
-        mv = memoryview(self.hts_calib)   
-        mv[4] = int.from_bytes(self.i2c.mem_read(2, self.address, HTS_TEMP_OUT | 0x80))
-        return mv[0] + ((mv[1] - mv[0]) * (mv[4] - mv[2])) / (mv[3] - mv[2])
+        # add 2 bits from reg 0x35 -> 10bit unsigned values)
+        self.t0_deg = (self.t0_deg | ((t1t0msb & 0x3) << 8)) >> 3
+        t1_deg = (t1_deg | ((t1t0msb & 0xc) << 6)) >> 3
+        
+        self.t_slope = (t1_deg-self.t0_deg) / (t1_out-self.t0_out)
+        self.h_slope = (h1_rh - self.h0_rh) / (h1_out - self.h0_out)
+        
+        print("h0_rh={}, h1_rh={}, h0_t0_out={}, h1_t0_out={}".format(
+            self.h0_rh, h1_rh, self.h0_out, h1_out))
+        print("t0_deg={}, t1_deg={}, t0_out={}, t1_out={}".format(
+            self.t0_deg, t1_deg, self.t0_out, t1_out))
+            
+    def measure(self):
+        """ returns (temp [deg], humidity [%rH]) """
+        # see TN1218 appnote
+        act_hout, act_tout = struct.unpack('<hh', self.i2c.readfrom_mem(self.addr, 0x28 | 0x80, 4))
+        temp = self.t0_deg + self.t_slope * (act_tout - self.t0_out)
+        humid = self.h0_rh + self.h_slope * (act_hout - self.h0_out)
+        return temp,humid/2
