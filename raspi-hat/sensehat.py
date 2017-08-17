@@ -38,9 +38,8 @@ Example usage:
 The values from gyro/accel/magnetometer can be used to calculate yaw/roll/pitch,
 by using an appopiate fusion algo (e.g. Madgwick algorithm)
 """
-import pyb
 import array
-from hts21 import HTS21
+from hts221 import HTS221
 from lps25 import LPS25
 from lsm9ds1 import LSM9DS1
 from atmel import SenseAtmel
@@ -54,7 +53,7 @@ class uSenseHAT:
         """ a wrapper class for sensors of a SenseHAT board """
         self.i2c = i2c
         # init drivers
-        self.hts = HTS21(i2c, I2C_ADDR_HUMID_TEMP)
+        self.hts = HTS221(i2c, I2C_ADDR_HUMID_TEMP)
         self.lps = LPS25(i2c, I2C_ADDR_TEMP_PRESSURE)
         self.lsm = LSM9DS1(i2c)
         self.matrix = SenseAtmel(i2c ,I2C_ADDR_MATRIX)
@@ -63,14 +62,17 @@ class uSenseHAT:
         return self.matrix.read_key()
         
     def read_pressure(self): 
-        return self.lps.read_pressure()
+        self.lps.measure()
+        return self.lps.get_pressure()
         
     def read_temperature(self):
         """ returns average temperature of hts21 and lps25 chip """
-        return (self.hts.read_temperature() + self.lps.read_temperature()) / 2
+        self.hts.measure()
+        return (self.hts.get_temperature() + self.lps.get_temperature()) / 2
         
-    def read_humidity(self): 
-        return self.hts.read_humidity()
+    def read_humidity(self):
+        self.hts.measure() 
+        return self.hts.get_humidity()
         
     def read_imu(self): 
         """ 

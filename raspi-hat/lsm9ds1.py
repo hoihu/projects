@@ -84,8 +84,8 @@ class LSM9DS1:
         i2c.writeto_mem(addr, CTRL_REG4_G, mv[:6])
         
         # fifo: use continous mode (overwrite old data if overflow)
-        i2c.writeto_mem(addr, FIFO_CTRL_REG, 0)
-        i2c.writeto_mem(addr, FIFO_CTRL_REG, 6 << 5)
+        i2c.writeto_mem(addr, FIFO_CTRL_REG, b'\x00')
+        i2c.writeto_mem(addr, FIFO_CTRL_REG, b'\xc0')
         
         self.scale_gyro = 32768 / self.SCALE_GYRO[scale_gyro][0]
         self.scale_accel = 32768 / self.SCALE_ACCEL[scale_accel][0]
@@ -135,27 +135,27 @@ class LSM9DS1:
         """
         mv = memoryview(self.scratch_int)
         f = self.scale_factor_magnet
-        self.i2c.readfrom_mem(self.address_magnet, OUT_M | 0x80, mv)
+        self.i2c.readfrom_mem_into(self.address_magnet, OUT_M | 0x80, mv)
         return (mv[0]/f, mv[1]/f, mv[2]/f)
     
     def read_gyro(self):
         """Returns gyroscope vector in degrees/sec."""
         mv = memoryview(self.scratch_int)
         f = self.scale_gyro
-        self.i2c.readfrom_mem(self.address_gyro, OUT_G | 0x80, mv)
+        self.i2c.readfrom_mem_into(self.address_gyro, OUT_G | 0x80, mv)
         return (mv[0]/f, mv[1]/f, mv[2]/f)
     
     def read_accel(self):
         """Returns acceleration vector in gravity units (9.81m/s^2)."""
         mv = memoryview(self.scratch_int)
         f = self.scale_accel
-        self.i2c.readfrom_mem(self.address_gyro, OUT_XL | 0x80, mv)
+        self.i2c.readfrom_mem_into(self.address_gyro, OUT_XL | 0x80, mv)
         return (mv[0]/f, mv[1]/f, mv[2]/f)
         
     def iter_accel_gyro(self):
         """A generator that returns tuples of (gyro,accelerometer) data from the fifo."""
         while True:
-            fifo_state = self.i2c.readfrom_mem(self.address_gyro, FIFO_SRC, 1)[0]
+            fifo_state = int.from_bytes(self.i2c.readfrom_mem(self.address_gyro, FIFO_SRC, 1),'big')
             if fifo_state & 0x3f:
                 # print("Available samples=%d" % (fifo_state & 0x1f))
                 yield self.read_gyro(),self.read_accel()

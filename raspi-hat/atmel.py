@@ -52,9 +52,9 @@ class SenseAtmel:
         3, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 10, 10]
     )
     
-    def __init__(self, i2c, address):
+    def __init__(self, i2c, addr=0x46):
         self.i2c = i2c
-        self.address = address
+        self.addr = addr
         self.gamma = self.GAMMA_NORMAL
         # buffer for LED data
         self.vmem = array.array('B',[0 for  i in range(0,192)])
@@ -184,5 +184,5 @@ class SenseAtmel:
         refresh matrix data
         takes ca.5msec  
         """
-        self.i2c.mem_write(self.vmem,self.address,0)
+        self.i2c.writeto_mem(self.addr, 0, self.vmem)
             

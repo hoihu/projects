@@ -14,17 +14,17 @@
 
 
 import pyb
-from pyb import I2C
+from machine import I2C
 from balancing import Balance
 
 from fusion import Fusion
 
-i2c = I2C(1, I2C.MASTER)
-i2c.deinit()
-i2c.init(I2C.MASTER)
+#i2c = I2C(1, I2C.MASTER)
+#i2c.deinit()
+#i2c.init(I2C.MASTER)
 
 from sensehat import uSenseHAT
-s = uSenseHAT(i2c)
+s = uSenseHAT(I2C(1))
 fuse = Fusion()
 balance = Balance(s.matrix)
 
