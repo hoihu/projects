@@ -58,23 +58,24 @@ class uSenseHAT:
         self.lsm = LSM9DS1(i2c)
         self.matrix = SenseAtmel(i2c ,I2C_ADDR_MATRIX)
 
-    def read_key(self): 
+    def measure(self):
+        self.hts.measure()
+        self.lps.measure()
+
+    def get_key(self): 
         return self.matrix.read_key()
         
-    def read_pressure(self): 
-        self.lps.measure()
+    def get_pressure(self): 
         return self.lps.get_pressure()
         
-    def read_temperature(self):
+    def get_temperature(self):
         """ returns average temperature of hts21 and lps25 chip """
-        self.hts.measure()
         return (self.hts.get_temperature() + self.lps.get_temperature()) / 2
         
-    def read_humidity(self):
-        self.hts.measure() 
+    def get_humidity(self):
         return self.hts.get_humidity()
         
-    def read_imu(self): 
+    def get_imu(self): 
         """ 
         returns 9DOF data: (gyro,accelerator,magnetometer) 
         containing (x,y,z) values scaled in deg/sec, g and gauss respecively
