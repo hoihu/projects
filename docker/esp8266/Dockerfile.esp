@@ -12,10 +12,10 @@ RUN echo APT::Install-Suggests "0"; >> /etc/apt/apt.conf
 
 # multiverse is required by unrar
 RUN apt-get -y update && apt-get install -y \
-    git \ 
+    git \
     software-properties-common \
     python-software-properties \
-    && add-apt-repository -y "deb http://archive.ubuntu.com/ubuntu precise multiverse" 
+    && add-apt-repository -y "deb http://archive.ubuntu.com/ubuntu precise multiverse"
     
 RUN apt-get update && apt-get install -y \
     unrar \
@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y \
     automake \
     libtool \
     gcc \
-    g++ \ 
+    g++ \
     gperf \
     flex \
     bison \
@@ -40,13 +40,16 @@ RUN apt-get update && apt-get install -y \
     bash \
     wget \
     nano \
-    help2man
+    help2man \
+    bzip2
 
 ## Clean apt cache
 RUN apt-get -y autoremove && \
     apt-get -y clean && \
     rm -rf /var/lib/apt/lists/* && \
-    rm -rf /tmp/*
+    rm -rf /tmp/* \
+    cp /usr/bin/wget wget-o
+
 
 # create user xtensa - toolchain cannot be built as root...
 RUN useradd -ms /bin/bash xtensa
@@ -56,10 +59,10 @@ WORKDIR /home/xtensa
 ENV PATH /home/xtensa/esp-open-sdk/xtensa-lx106-elf/bin:$PATH
 
 # GIT checkout and make toolchain
-RUN git clone --recursive https://github.com/pfalcon/esp-open-sdk.git
-WORKDIR /home/xtensa/esp-open-sdk
-RUN make
+#RUN git clone --recursive https://github.com/pfalcon/esp-open-sdk.git
+#WORKDIR /home/xtensa/esp-open-sdk
+#RUN make
 
 ## Checkout initial uPy image
-WORKDIR /home/xtensa
-RUN git clone --recursive https://github.com/micropython/micropython.git
+#WORKDIR /home/xtensa
+#RUN git clone --recursive https://github.com/micropython/micropython.git
