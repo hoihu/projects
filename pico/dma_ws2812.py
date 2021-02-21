@@ -1,4 +1,5 @@
-# Example using PIO to drive a set of WS2812 LEDs.
+# Example based on pio_ws2812.py, but modified to use
+# a DMA channel to push out the data to the PIO
 
 import array, time
 from machine import Pin
